@@ -28,10 +28,10 @@
         "php": ">=8.0"
     },
     "require-dev": {
-        "friendsofphp/php-cs-fixer": "^3",
-        "phpstan/phpstan": "^1",
-        "phpstan/phpstan-deprecation-rules": "^1",
-        "phpunit/phpunit": "^9",
-        "spaze/phpstan-disallowed-calls": "^3"
+        "friendsofphp/php-cs-fixer": "^3.49",
+        "phpstan/phpstan": "^1.10",
+        "phpstan/phpstan-deprecation-rules": "^1.1",
+        "phpunit/phpunit": "^9.6",
+        "spaze/phpstan-disallowed-calls": "^3.1"
     }
 }
