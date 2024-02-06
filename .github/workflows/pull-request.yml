@@ -42,7 +42,7 @@ jobs:
         run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
       - name: Run unit tests
-        run: vendor/bin/phpunit run tests
+        run: vendor/bin/phpunit tests
 
       - name: Run PHPStan analyze for src/tests
         run: vendor/bin/phpstan analyse --configuration=phpstan-all.neon
