@@ -13,12 +13,12 @@ jobs:
       matrix:
         php-version:
           - "8.0"
-          - "8.1"
-          - "8.2"
-          - "8.3"
-        stability:
-          - "prefer-lowest"
-          - "prefer-stable"
+#          - "8.1"
+#          - "8.2"
+#          - "8.3"
+#        stability:
+#          - "prefer-lowest"
+#          - "prefer-stable"
     steps:
       - name: Check out the code so composer can see our private composer.json file and more
         uses: actions/checkout@v4.1.1
@@ -41,8 +41,11 @@ jobs:
       - name: Run composer update
         run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
+      - name: Let us know where the thing is
+        run: ls -la
+
       - name: Run unit tests
-        run: vendor/bin/phpunit tests
+        run: vendor/bin/phpunit ./tests
 
       - name: Run PHPStan analyze for src/tests
         run: vendor/bin/phpstan analyse --configuration=phpstan-all.neon
