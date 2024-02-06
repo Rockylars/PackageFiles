@@ -1,0 +1,17 @@
+parameters:
+    level: 8
+    tmpDir: output/cache/phpstan
+    paths:
+        - src
+
+    # https://github.com/spaze/phpstan-disallowed-calls
+
+    disallowedNamespaces:
+        -
+            namespace:
+                - PHPUnit\*
+            message: 'these are not meant to be accessed outside of tests'
+
+includes:
+    - phpstan-all-baseline.neon
+    - vendor/spaze/phpstan-disallowed-calls/extension.neon

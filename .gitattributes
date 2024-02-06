@@ -1,0 +1,20 @@
+# Add / in front to make it path match and not name match
+
+# Exclude files that don't need to go into the package
+# https://git-scm.com/docs/gitattributes#_export_ignore
+/.github                    export-ignore
+/docker                     export-ignore
+/tests                      export-ignore
+
+/.gitattributes             export-ignore
+/.gitignore                 export-ignore
+/.php-cs-fixer.php          export-ignore
+# The lock will help us see exactly when something broke, but will not affect other projects that depend on Faker.
+# https://getcomposer.org/doc/01-basic-usage.md#commit-your-composer-lock-file-to-version-control
+# https://getcomposer.org/doc/02-libraries.md#lock-file
+/composer.lock              export-ignore
+/docker-compose.yml         export-ignore
+/Makefile                   export-ignore
+/phpstan-all.neon           export-ignore
+/phpstan-all-baseline.neon  export-ignore
+/phpstan-src.neon           export-ignore
