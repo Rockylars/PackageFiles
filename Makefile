@@ -48,7 +48,7 @@ composer:
 .PHONY: test tests
 test: tests
 tests:
-	${PHP_RUN} php vendor/bin/phpunit tests
+	${PHP_RUN} php vendor/bin/phpunit tests --testdox
 
 ## analyze:		Runs PHPStan -> everything
 .PHONY: analyse analyze

@@ -1,5 +1,5 @@
 ### Introduction
-This little script can be used to quickly see what will be included when you turn your project into a package.
+This little script can be used to quickly see what will be included when you turn your project into a Composer package and release a new version.
 Only in PHP, as I only work in that, but it's so small that you're free to replicate it.
 
 ### History
@@ -14,5 +14,13 @@ I plan to upgrade this to eventually do all the magical and recursive depth sear
 
 ### Examples
 ```php
-# TODO
+self::assertSame(
+    [
+        'LICENSE',
+        'README.md',
+        'composer.json',
+        'src'
+    ],
+    PackageParser::simplePackageSearch(__DIR__ . 'path to the root')
+);
 ```
