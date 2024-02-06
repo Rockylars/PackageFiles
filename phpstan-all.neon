@@ -1,0 +1,53 @@
+parameters:
+    level: max
+    tmpDir: output/cache/phpstan
+    paths:
+        - src
+        - tests
+
+    # https://github.com/spaze/phpstan-disallowed-calls
+
+    disallowedFunctionCalls:
+        -
+            function:
+                - 'dump()'
+                - 'var_dump()'
+                - 'print()'
+                - 'print_r()'
+                - 'echo()'
+                - 'dd()'
+                - 'die()'
+                - 'exit()'
+                - 'eval()'
+                - 'debug_backtrace()'
+                - 'file_put_contents()'
+                - 'microtime()'
+                - 'sleep()'
+            message: 'you probably left a debug statement active in the code'
+
+    disallowedNamespaces:
+        -
+            namespace:
+                - PhpCsFixer\*
+                - PHPStan\*
+                - Spaze\PHPStan\*
+            message: 'these are not meant to be accessed'
+
+    disallowedMethodCalls:
+        -
+            method: 'Throwable::getTrace()'
+            message: 'do not leave these in'
+            errorTip: 'You probably left a debug statement'
+        -
+            method: 'Throwable::getTraceAsString()'
+            message: 'do not leave these in'
+            errorTip: 'You probably left a debug statement'
+
+includes:
+    - phpstan-all-baseline.neon
+    - vendor/phpstan/phpstan-deprecation-rules/rules.neon
+    - vendor/spaze/phpstan-disallowed-calls/extension.neon
+    - vendor/spaze/phpstan-disallowed-calls/disallowed-dangerous-calls.neon
+    - vendor/spaze/phpstan-disallowed-calls/disallowed-execution-calls.neon
+    - vendor/spaze/phpstan-disallowed-calls/disallowed-insecure-calls.neon
+    - vendor/spaze/phpstan-disallowed-calls/disallowed-loose-calls.neon

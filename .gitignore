@@ -1,0 +1,13 @@
+# Add / in front to make it path match and not name match
+
+# Composer
+/vendor/
+
+# Output, logs, cache, debugging
+/output/
+
+# PHP CodeStyle Fixer
+/.php-cs-fixer.cache
+
+# PHPStorm
+/.idea/
