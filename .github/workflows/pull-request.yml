@@ -41,14 +41,11 @@ jobs:
       - name: Run composer update
         run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction
 
-      - name: Let us know where the thing is
-        run: ls -la
-
       - name: Run unit tests
-        run: vendor/bin/phpunit ./tests
+        run: vendor/bin/phpunit tests
 
-      - name: Run PHPStan analyze for src/tests
+      - name: Run PHPStan analyze for /src + /tests
         run: vendor/bin/phpstan analyse --configuration=phpstan-all.neon
 
-      - name: Run PHPStan analyze for extra bits for src
+      - name: Run PHPStan analyze for extra bits for /src
         run: vendor/bin/phpstan analyse --configuration=phpstan-src.neon
