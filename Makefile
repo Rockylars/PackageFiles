@@ -78,11 +78,13 @@ baseline:
 .PHONY: cs
 cs:
 	${PHP_RUN} php -d memory_limit=-1 vendor/bin/php-cs-fixer fix --verbose --dry-run --diff $(ARGS)
+	${PHP_RUN} php -d memory_limit=-1 vendor/bin/php-cs-fixer fix --verbose --dry-run --diff .php-cs-fixer.php
 
 ## cs-fix:		Runs PHPCS with fixes through docker
 .PHONY: cs-fix
 cs-fix:
 	${PHP_RUN} php -d memory_limit=-1 vendor/bin/php-cs-fixer fix --verbose --diff $(ARGS)
+	${PHP_RUN} php -d memory_limit=-1 vendor/bin/php-cs-fixer fix --verbose --diff .php-cs-fixer.php
 
 ##>—— Extra ————————————————
 
