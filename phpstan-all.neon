@@ -51,3 +51,4 @@ includes:
     - vendor/spaze/phpstan-disallowed-calls/disallowed-execution-calls.neon
     - vendor/spaze/phpstan-disallowed-calls/disallowed-insecure-calls.neon
     - vendor/spaze/phpstan-disallowed-calls/disallowed-loose-calls.neon
+    - vendor/thecodingmachine/phpstan-safe-rule/phpstan-safe-rule.neon
