@@ -33,7 +33,7 @@ jobs:
           # Do not include `cli`, `common` or `fpm`.
           # We replace mysql with mysqlnd and pdo_mysql.
           # Also include the ext's from your composer.json, you should also have them enabled (not installed).
-          extensions: none, ctype, curl, date, dom, fileinfo, filter, ftp, hash, iconv, json, libxml, mbstring, mysqlnd, openssl, pcre, PDO, pdo_sqlite, Phar, posix, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard, tokenizer, xml, xmlreader, xmlwriter, zlib
+          extensions: none, Core, ctype, curl, date, dom, fileinfo, filter, ftp, hash, iconv, json, libxml, mbstring, mysqlnd, openssl, pcre, PDO, pdo_sqlite, Phar, posix, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard, tokenizer, xml, xmlreader, xmlwriter, zlib
 
       - name: Run Composer install
         run: composer install --no-interaction
