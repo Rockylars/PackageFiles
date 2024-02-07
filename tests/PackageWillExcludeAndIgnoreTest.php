@@ -9,8 +9,6 @@ use Rocky\PackageFiles\PackageParser;
 
 final class PackageWillExcludeAndIgnoreTest extends TestCase
 {
-    private const DIRECTORY_UP = '..';
-
     /** @test */
     public static function simplePackageSearchWillExcludeAndIgnore(): void
     {
@@ -22,7 +20,7 @@ final class PackageWillExcludeAndIgnoreTest extends TestCase
                 'composer.json',
                 'src'
             ],
-            PackageParser::simplePackageSearch(__DIR__ . DIRECTORY_SEPARATOR . self::DIRECTORY_UP)
+            PackageParser::simplePackageSearch(__DIR__ . DIRECTORY_SEPARATOR . '..')
         );
     }
 }

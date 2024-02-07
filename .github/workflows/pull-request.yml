@@ -20,7 +20,7 @@ jobs:
           - "prefer-lowest"
           - "prefer-stable"
     steps:
-      - name: Check out the code so composer can see our private composer.json file and more
+      - name: Check out the code so Composer can see our private composer.json file and more
         uses: actions/checkout@v4.1.1
 
       - name: Setup PHP with tools
@@ -35,8 +35,11 @@ jobs:
           # Also include the ext's from your composer.json, you should also have them enabled (not installed).
           extensions: none, ctype, curl, date, dom, fileinfo, filter, ftp, hash, iconv, json, libxml, mbstring, mysqlnd, openssl, pcre, PDO, pdo_sqlite, Phar, posix, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard, tokenizer, xml, xmlreader, xmlwriter, zlib
 
-      - name: Run composer install
-        run: composer install
+      - name: Run Composer install
+        run: composer install --no-interaction
+
+      - name: Raise the PHP version
+        run: composer require php:~${{ matrix.php-version }} --no-interaction
 
       - name: Run composer update
         run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction
