@@ -19,7 +19,6 @@ jobs:
         stability:
           - "prefer-lowest"
           - "prefer-stable"
-    name: ${{ matrix.php-version }} ${{ matrix.stability }}
     steps:
       - name: Check out the code so Composer can see our private composer.json file and more
         uses: actions/checkout@v4.1.1
