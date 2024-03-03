@@ -17,4 +17,5 @@
 /Makefile                   export-ignore
 /phpstan-all.neon           export-ignore
 /phpstan-all-baseline.neon  export-ignore
-/phpstan-src.neon           export-ignore
+/phpstan-not-cs-fixer.neon  export-ignore
+/phpstan-not-tests.neon     export-ignore

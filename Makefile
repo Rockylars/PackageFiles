@@ -53,19 +53,13 @@ tests:
 ## analyze:		Runs PHPStan -> everything
 .PHONY: analyse analyze
 analyse: analyze
-analyze: analyze-all analyze-src
-
-## analyze-all:		Runs PHPStan -> src + tests
-.PHONY: analyse-all analyze-all
-analyse-all: analyze-all
-analyze-all:
+analyze:
+	echo "> all"
 	${PHP_RUN} php -d memory_limit=-1 vendor/bin/phpstan analyse --configuration=phpstan-all.neon
-
-## analyze-src:		Runs PHPStan -> src
-.PHONY: analyse-src analyze-src
-analyse-src: analyze-src
-analyze-src:
-	${PHP_RUN} php -d memory_limit=-1 vendor/bin/phpstan analyse --configuration=phpstan-src.neon
+	echo "> not cs fixer"
+	${PHP_RUN} php -d memory_limit=-1 vendor/bin/phpstan analyse --configuration=phpstan-not-cs-fixer.neon
+	echo "> not tests"
+	${PHP_RUN} php -d memory_limit=-1 vendor/bin/phpstan analyse --configuration=phpstan-not-tests.neon
 
 ## baseline:		Runs PHPStan -> baseline
 .PHONY: baseline

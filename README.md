@@ -49,5 +49,6 @@ self::assertSame(
 9. Run `make setup` and you're done.
 
 [Optional] Get access to private repositories you have access to on GitHub:
+
 10. Generate an access token in GitHub with just the Repo permissions.
 11. Run `make composer` and add `config --global github-oauth.github.com YOUR_GENERATED_TOKEN`.

@@ -1,0 +1,18 @@
+parameters:
+    level: 8
+    tmpDir: output/cache/phpstan
+    paths:
+        - src
+        - tests
+
+    # https://github.com/spaze/phpstan-disallowed-calls
+
+    disallowedNamespaces:
+        -
+            namespace:
+                - PhpCsFixer\*
+            message: 'these are not meant to be accessed'
+
+includes:
+    - phpstan-all-baseline.neon
+    - vendor/spaze/phpstan-disallowed-calls/extension.neon
