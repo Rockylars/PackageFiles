@@ -29,7 +29,6 @@ parameters:
     disallowedNamespaces:
         -
             namespace:
-                - PhpCsFixer\*
                 - PHPStan\*
                 - Spaze\PHPStan\*
             message: 'these are not meant to be accessed'
