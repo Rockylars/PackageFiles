@@ -29,7 +29,7 @@ jobs:
           php-version: ${{ matrix.php-version }}
           tools: composer:v2
           ini-values: zend.exception_ignore_args="0", date.timezone="Europe/Amsterdam"
-          # Start with none to disable default, include all from `php -i` in `make bash`.
+          # Start with none to disable default, include all from `make php-modules`.
           # Do not include `cli`, `common` or `fpm`.
           # We replace mysql with mysqlnd and pdo_mysql.
           # Also include the ext's from your composer.json, you should also have them enabled (not installed).
@@ -39,10 +39,10 @@ jobs:
         run: composer install --no-interaction
 
       - name: Raise the PHP version
-        run: composer require php:~${{ matrix.php-version }} --no-interaction
+        run: composer require php:~${{ matrix.php-version }} --no-interaction --no-update
 
       - name: Run composer update
-        run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction
+        run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction --with-all-dependencies
 
       - name: Run unit tests
         run: vendor/bin/phpunit tests --testdox
