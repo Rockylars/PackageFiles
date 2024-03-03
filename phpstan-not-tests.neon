@@ -3,6 +3,7 @@ parameters:
     tmpDir: output/cache/phpstan
     paths:
         - src
+        - .php-cs-fixer.php
 
     # https://github.com/spaze/phpstan-disallowed-calls
 
@@ -11,6 +12,10 @@ parameters:
             namespace:
                 - PHPUnit\*
             message: 'these are not meant to be accessed outside of tests'
+        -
+            namespace:
+                - Rocky\PackageFiles\Tests\*
+            message: 'the test classes dont belong in the package code'
 
 includes:
     - phpstan-all-baseline.neon

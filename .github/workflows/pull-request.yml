@@ -47,8 +47,11 @@ jobs:
       - name: Run unit tests
         run: vendor/bin/phpunit tests --testdox
 
-      - name: Run PHPStan analyze for /src + /tests
+      - name: Run PHPStan analyze for everything
         run: vendor/bin/phpstan analyse --configuration=phpstan-all.neon
 
-      - name: Run PHPStan analyze for extra bits for /src
-        run: vendor/bin/phpstan analyse --configuration=phpstan-src.neon
+      - name: Run PHPStan analyze for everything but cs fixer
+        run: vendor/bin/phpstan analyse --configuration=phpstan-not-cs-fixer.neon
+
+      - name: Run PHPStan analyze for everything but tests
+        run: vendor/bin/phpstan analyse --configuration=phpstan-not-tests.neon

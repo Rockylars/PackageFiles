@@ -4,6 +4,7 @@ parameters:
     paths:
         - src
         - tests
+        - .php-cs-fixer.php
 
     # https://github.com/spaze/phpstan-disallowed-calls
 
