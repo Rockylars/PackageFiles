@@ -70,7 +70,7 @@ analyze-src:
 ## baseline:		Runs PHPStan -> baseline
 .PHONY: baseline
 baseline:
-	${PHP_RUN} php -d memory_limit=-1 vendor/bin/phpstan analyse --configuration=phpstan-all.neon --generate-baseline=phpstan-all-baseline.neon
+	${PHP_RUN} php -d memory_limit=-1 vendor/bin/phpstan analyse --configuration=phpstan-all.neon --generate-baseline=phpstan-all-baseline.neon --allow-empty-baseline
 
 ##>—— Styling ——————————————
 

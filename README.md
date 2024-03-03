@@ -24,3 +24,30 @@ self::assertSame(
     PackageParser::simplePackageSearch(__DIR__ . 'path to the root')
 );
 ```
+
+### Set up the project for commits on Linux
+1. Have Docker functional, you don't need an account for this.
+2. Have a GitHub account (obviously) for commits.
+3. Get an SSH token set up (preferably id_ed25519) and hooked up to your GitHub account.
+    - If not, you won't be able to pull/push anything properly.
+4. Get the project downloaded and `cd` into the folder.
+    - If you plan to make any PR's and don't have rights, make a fork first, grab that, and then attempt to merge PR's of that in.
+5. Make sure that running `git config --global --list` and `git config --list` both show `user.email=YOUR_GITHUB_EMAIL`
+   and `user.name=YOUR_GITHUB_USER_NAME`.
+    - If not, here's the steps to fix it:
+    - Set the value for the project and unset the one for local, otherwise set it for local only.
+    - Your commits won't link to an account if this is not done.
+6. Make sure that running `groups` shows `docker` in it.
+    - If not, here's the steps to fix it:
+    - run `sudo usermod -aG docker $USER` and then reboot your PC.
+    - You won't be able to run the needed Docker commands if this is not done.
+7. Make sure that running `ls -la ~/.composer` shows your user instead of `root` for `.`.
+    - If not, here's the steps to fix it:
+    - Run `sudo chown -R $USER:$USER ~/.composer`.
+    - You won't be able to store library authentication and Composer cache if this is not done.
+8. Have the `make` extension installed.
+9. Run `make setup` and you're done.
+
+[Optional] Get access to private repositories you have access to on GitHub:
+10. Generate an access token in GitHub with just the Repo permissions.
+11. Run `make composer` and add `config --global github-oauth.github.com YOUR_GENERATED_TOKEN`.
