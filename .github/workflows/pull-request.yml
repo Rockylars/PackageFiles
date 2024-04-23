@@ -21,7 +21,7 @@ jobs:
           - "prefer-stable"
     steps:
       - name: Check out the code so Composer can see our private composer.json file and more
-        uses: actions/checkout@v4.1.2
+        uses: actions/checkout@v4.1.3
 
       - name: Setup PHP with tools
         uses: shivammathur/setup-php@2.30.3
