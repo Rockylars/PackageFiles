@@ -8,6 +8,7 @@ on: pull_request
 jobs:
   tests-and-analyse:
     runs-on: ubuntu-latest
+    timeout-minutes: 1
     strategy:
       fail-fast: false
       matrix:
@@ -21,9 +22,11 @@ jobs:
           - "prefer-stable"
     steps:
       - name: Check out the code so Composer can see our private composer.json file and more
+        timeout-minutes: 1
         uses: actions/checkout@v4.1.4
 
       - name: Setup PHP with tools
+        timeout-minutes: 1
         uses: shivammathur/setup-php@2.30.4
         with:
           php-version: ${{ matrix.php-version }}
@@ -36,22 +39,29 @@ jobs:
           extensions: none, Core, ctype, curl, date, dom, fileinfo, filter, ftp, hash, iconv, json, libxml, mbstring, mysqlnd, openssl, pcre, PDO, pdo_sqlite, Phar, posix, readline, Reflection, session, SimpleXML, sodium, SPL, sqlite3, standard, tokenizer, xml, xmlreader, xmlwriter, zlib
 
       - name: Run Composer install
+        timeout-minutes: 1
         run: composer install --no-interaction
 
       - name: Raise the PHP version
+        timeout-minutes: 1
         run: composer require php:~${{ matrix.php-version }} --no-interaction --no-update
 
       - name: Run composer update
+        timeout-minutes: 1
         run: composer update --${{ matrix.stability }} --prefer-dist --no-interaction --with-all-dependencies
 
       - name: Run unit tests
+        timeout-minutes: 1
         run: vendor/bin/phpunit tests --testdox
 
       - name: Run PHPStan analyze for everything
+        timeout-minutes: 1
         run: vendor/bin/phpstan analyse --configuration=phpstan-all.neon
 
       - name: Run PHPStan analyze for everything but cs fixer
+        timeout-minutes: 1
         run: vendor/bin/phpstan analyse --configuration=phpstan-not-cs-fixer.neon
 
       - name: Run PHPStan analyze for everything but tests
+        timeout-minutes: 1
         run: vendor/bin/phpstan analyse --configuration=phpstan-not-tests.neon
