@@ -2403,16 +2403,16 @@
         },
         {
             "name": "spaze/phpstan-disallowed-calls",
-            "version": "v3.2.0",
+            "version": "v3.4.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spaze/phpstan-disallowed-calls.git",
-                "reference": "6d5ce7e951c6e9b22b9b6c14301ab9cf55e7b535"
+                "reference": "f7f1dc8d5ceeb2d0532dc9df66d13964b4baa5f4"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spaze/phpstan-disallowed-calls/zipball/6d5ce7e951c6e9b22b9b6c14301ab9cf55e7b535",
-                "reference": "6d5ce7e951c6e9b22b9b6c14301ab9cf55e7b535",
+                "url": "https://api.github.com/repos/spaze/phpstan-disallowed-calls/zipball/f7f1dc8d5ceeb2d0532dc9df66d13964b4baa5f4",
+                "reference": "f7f1dc8d5ceeb2d0532dc9df66d13964b4baa5f4",
                 "shasum": ""
             },
             "require": {
@@ -2457,7 +2457,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spaze/phpstan-disallowed-calls/issues",
-                "source": "https://github.com/spaze/phpstan-disallowed-calls/tree/v3.2.0"
+                "source": "https://github.com/spaze/phpstan-disallowed-calls/tree/v3.4.0"
             },
             "funding": [
                 {
@@ -2465,7 +2465,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2024-04-21T02:16:39+00:00"
+            "time": "2024-05-14T16:23:53+00:00"
         },
         {
             "name": "symfony/console",
