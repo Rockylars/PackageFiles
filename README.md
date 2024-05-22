@@ -52,3 +52,19 @@ self::assertSame(
 
 10. Generate an access token in GitHub with just the Repo permissions.
 11. Run `make composer` and add `config --global github-oauth.github.com YOUR_GENERATED_TOKEN`.
+
+### Functions of advanced searches
+- https://git-scm.com/docs/gitignore
+- https://opensource.com/article/20/8/dont-ignore-gitignore
+- https://www.w3schools.com/git/git_ignore.asp
+- https://man7.org/linux/man-pages/man7/glob.7.html
+- The `.gitattribute` file can be put on multiple levels and will take that as it's root, they are found automatically and just the same as `.gitignore` files.
+- Patterns can not look upwards on the file tree.
+- Patterns for the `.gitattributes` `export-ignore` are the same as those for `.gitignore`.
+- Lower files can cancel out upper files, so a name match will be cancelled out by a lower not match.
+- You can ignore lower `.gitignore` and `.gitattributes` files.
+
+Testing what `.gitattributes` does is a journey, but the easiest way I've found just make a branch and commit your stuff into it, where you can confirm it behaves just like `.gitignore`.
+Any uncommitted files will not work with the following command, but you don't have to push this remote.
+You use `git archive --format=zip --output=test.zip NAME_OF_TEST_FILE_BRANCH_BASED_ON_CHANGE_BRANCH` to generate it.
+You can use `git ls-tree NAME_OF_BRANCH -r --name-only` to see what could be getting committed and `{ git ls-tree -r main --name-only; find SOME_FOLDER_PATH MORE_FOLDER_PATHS -type f; }` to investigate it deeper

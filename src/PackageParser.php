@@ -12,6 +12,7 @@ use Safe\Exceptions\PcreException;
 final class PackageParser
 {
     /**
+     * The faster and simpler one dimensional search with fewer features, works for most projects.
      * @return array<int, string>
      *
      * @throws Exception <br> > if $projectRoot is not a directory
@@ -20,6 +21,41 @@ final class PackageParser
      * @throws PcreException <br> > if the regex breaks
      */
     public static function simplePackageSearch(string $projectRoot): array
+    {
+        $filesOrFoldersExcluded = ['.', '..', '.git'];
+
+        if (!is_dir($projectRoot)) {
+            throw new Exception('"' . $projectRoot . '" is not a directory');
+        }
+
+        $gitIgnore = \Safe\file_get_contents($projectRoot . DIRECTORY_SEPARATOR . '.gitignore');
+        self::matchFileContents($gitIgnore, '/^\/(.*?)\/?$/', $filesOrFoldersExcluded);
+
+        $gitAttributes = \Safe\file_get_contents($projectRoot . DIRECTORY_SEPARATOR . '.gitattributes');
+        self::matchFileContents($gitAttributes, '/^\/(.*?)\/? *export-ignore$/', $filesOrFoldersExcluded);
+
+        /** @var array<int, string> $project */
+        $project = \Safe\scandir($projectRoot);
+
+        $result = [];
+        foreach ($project as $projectContents) {
+            if (!in_array($projectContents, $filesOrFoldersExcluded, true)) {
+                $result[] = $projectContents;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * The faster and simpler one dimensional search.
+     * @return array<int, string>
+     *
+     * @throws Exception <br> > if $projectRoot is not a directory
+     * @throws FilesystemException <br> > if the root .gitignore file can not be found <br> > if the .gitattributes file can not be found
+     * @throws DirException <br> > if $projectRoot is not a directory
+     * @throws PcreException <br> > if the regex breaks
+     */
+    public static function advancedPackageSearch(string $projectRoot, int $maxDepth = 1): array
     {
         $filesOrFoldersExcluded = ['.', '..', '.git'];
 
