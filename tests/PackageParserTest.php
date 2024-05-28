@@ -10,9 +10,24 @@ use Rocky\PackageFiles\PackageParser;
 final class PackageParserTest extends TestCase
 {
     /** @test */
-    public static function simplePackageSearchWillExcludeAndIgnore(): void
+    public static function run_will_parse_the_working_directory_if_no_project_root_is_provided(): void
     {
         // Update the README when updating this.
+        self::assertSame(
+            $result = [
+                'LICENSE',
+                'README.md',
+                'composer.json',
+                'src'
+            ],
+            PackageParser::run(__DIR__ . DIRECTORY_SEPARATOR . '..', 5, 5)
+        );
+        self::assertSame($result, PackageParser::run(searchDepth: 5, resultDepth: 5));
+    }
+
+    /** @test */
+    public static function run_will_reduce_the_search_depth_if_provided(): void
+    {
         self::assertSame(
             [
                 'LICENSE',
@@ -20,45 +35,40 @@ final class PackageParserTest extends TestCase
                 'composer.json',
                 'src'
             ],
-            PackageParser::simplePackageSearch(__DIR__ . DIRECTORY_SEPARATOR . '..')
+            PackageParser::run(searchDepth: 2, resultDepth: 5)
+        );
+        self::assertSame(
+            [
+                'LICENSE',
+                'README.md',
+                'composer.json',
+                'src'
+            ],
+            PackageParser::run(resultDepth: 5)
         );
     }
 
     /** @test */
-    public static function s(): void
+    public static function run_will_reduce_the_result_depth_if_provided(): void
     {
-        // You must first parse the gitignore to see if a gitattributes file got ignored, that one will not be accounted for.
-
-        // TODO: ---
-        // /xxxxxx   path search
-        // xxxxx     name search
-        // xx/xx     subdirectory
-        // xx*       zero to infinite characters
-        // xx?       zero to one character(s)
-        // # xxx     ignore comments
-        // [pdf]     ignore git attributes stuff that isn't export-ignore
-        //   /dfdf   start with spaces that should be trimmed.
-        // sdfd ex.. have spaces between file and export-ignore
-        // !/dfdf    inversion
-        // *.txt     ignoring the rules coming in from above
-        // \*        escaped character
-        // \\\\*     chained escaped character solving
-        // [sS]*.txt range operator with set
-        // [!S]*.txt range operator with set exclusion
-        // [a-z]*    range operator with range
-        // [!a-c]*   range operator with range exclusion? Test this.
-        //           ignore blank lines
-        // df*/      directory parsed instead of file matched, excluding files from this match.
-        // []]       range operator with ] valid as first character.
-        // [3]]      range operator with ] invalid not as first character.
-        // [3!]      range operator with ! valid as not first character.
-
-        // **/lib/name.file             Starting with ** before / specifies that it matches any folder in the repository. Not just on root.
-        // **/name                      All name folders, and files and folders in any name folder.
-        // /lib/**/name                 All name folders, and files and folders in any name folder within the lib folder.
-
-        //TODO: More.
-
-        //TODO: Figure out how the `export-subst` works.
+        self::assertSame(
+            [
+                'LICENSE',
+                'README.md',
+                'composer.json',
+                'src'
+            ],
+            PackageParser::run(searchDepth: 5, resultDepth: 2)
+        );
+        self::assertSame(
+            [
+                'LICENSE',
+                'README.md',
+                'composer.json',
+                'src'
+            ],
+            PackageParser::run(searchDepth: 5)
+        );
     }
+
 }
