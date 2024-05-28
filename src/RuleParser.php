@@ -51,11 +51,37 @@ use Safe\Exceptions\PcreException;
 
 final class RuleParser
 {
-    public static function run(string $rule): void
+    public static function run(string $line, bool $doExtraThingsForGitAttributes): IgnoreRule|null
     {
-        $text = trim($rule);
-        if (str_starts_with($text, '#')) {
-            return;
+        //   /dfdf   start with spaces that should be trimmed.
+        $line = trim($line);
+
+        //           ignore blank lines
+        if ($line === '') {
+            return null;
         }
+
+        //  #  xxx   ignore comments
+        if (str_starts_with($line, '#')) {
+            return null;
+        }
+
+        if ($doExtraThingsForGitAttributes) {
+            // [pdf]     ignore git attributes stuff that isn't export-ignore
+            if (!str_ends_with($line, ' export-ignore')) {
+                return null;
+            }
+
+            // sdfd  ex- have spaces between file and export-ignore
+            $line = rtrim(substr($line, 0, -14));
+        }
+
+        $rule = new IgnoreRule(
+            // !/dfdf    inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
+            str_starts_with($line, '!')
+        );
+
+        
+        return $rule;
     }
 }

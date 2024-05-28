@@ -34,50 +34,17 @@ final class PackageParser
     ): array
     {
         //TODO: Add a config to prevent deep searches (or all searches) in certain arrays, such as vendor.
-
-        // region Convert the project root
-
-        // Convert the path to a straight path to prevent debugging nightmares, using the current working directory if nothing is given.
-        // If virtual paths are an issue, then we should copy one of the custom scripts people have already written.
         $projectRoot = $projectRoot === null ? \Safe\getcwd() : \Safe\realpath($projectRoot);
-
-        // endregion
-
-        // region Gather the project directories
-
         $projectContents = self::search($projectRoot, 1, $searchDepth);
-
-        // endregion
-
-        // region Parse all git ignore files
-
         self::processGitIgnoreFiles($projectContents);
         //TODO: Remove these below later.
         $projectContents['.idea']['included'] = false;
         $projectContents['output']['included'] = false;
         $projectContents['vendor']['included'] = false;
-
-        // endregion
-
-        // region Remove all ignored files/folders (test if locally, a file brought back through gitattributes, will be accepted in)
-
         self::removeExcludedContent($projectContents);
-
-        // endregion
-
-        // TODO: Parse all git attributes.
-
-        // region Remove all ignored files/folders
-
+        self::processGitAttributesFiles($projectContents);
         self::removeExcludedContent($projectContents);
-
-        // endregion
-
-        // region Simplify the result
-
         return self::summarize($projectContents, 1, $resultDepth);
-
-        // endregion
     }
 
     /**
@@ -121,7 +88,11 @@ final class PackageParser
         if (array_key_exists('.gitignore', $directory)) {
             $lines = explode("\n", \Safe\file_get_contents($directory['.gitignore']['path']));
             foreach ($lines as $line) {
-                RuleParser::run($line);
+                $rule = RuleParser::run($line, false);
+                if ($rule === null) {
+                    continue;
+                }
+                self::processRule($directory, $rule);
             }
         }
         foreach ($directory as $fileOrFolderName => $info) {
@@ -133,14 +104,39 @@ final class PackageParser
         }
     }
 
-    private static function processGitAttributesFiles(): void
+    private static function processGitAttributesFiles(array &$directory): void
     {
-
+        if (array_key_exists('.gitattributes', $directory)) {
+            $lines = explode("\n", \Safe\file_get_contents($directory['.gitattributes']['path']));
+            foreach ($lines as $line) {
+                $rule = RuleParser::run($line, true);
+                if ($rule === null) {
+                    continue;
+                }
+                self::processRule($directory, $rule);
+            }
+        }
+        foreach ($directory as $fileOrFolderName => $info) {
+            // The search depth will make some directories not fetch their contents.
+            if ($info['is_directory'] && isset($info['contents'])) {
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a reference here.
+                self::processGitAttributesFiles($directory[$fileOrFolderName]['contents']);
+            }
+        }
     }
 
-    private static function processRule(): void
+    private static function processRule(array &$directory, IgnoreRule $rule): void
     {
-
+        // Rules can not look up, and they will always take the current directory of the .gitignore/.gitattributes file as their root.
+        // Rules that counteract the rules before it will run as the new rule for the files/folders it applies to.
+        foreach ($directory as $fileOrFolderName => $info) {
+            // The search depth will make some directories not fetch their contents.
+            if (/** TODO: If rule influences more layers */ $info['is_directory'] && isset($info['contents'])) {
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a reference here.
+                self::processRule($directory[$fileOrFolderName]['contents'], $rule);
+            }
+            //TODO: Add a rule localizer for rules that influence deeper paths specifically and not all paths.
+        }
     }
 
     private static function summarize(array $directory, int $currentDepth, int $maxDepth): array
