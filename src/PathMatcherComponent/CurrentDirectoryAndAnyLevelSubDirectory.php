@@ -7,7 +7,7 @@ namespace Rocky\PackageFiles\PathMatcherComponent;
 use Rocky\PackageFiles\PathMatcher;
 use Rocky\PackageFiles\PathMatcherComponent;
 
-final class AnyLevelSubDirectory implements PathMatcherComponent
+final class CurrentDirectoryAndAnyLevelSubDirectory implements PathMatcherComponent
 {
     /** @inheritDoc */
     public function asRegExp(): string

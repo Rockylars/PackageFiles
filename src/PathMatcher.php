@@ -11,7 +11,7 @@ final class PathMatcher
     /** @var array<int, PathMatcherComponent> */
     private array $pathComponents = [];
     private bool $targetsMatching = true;
-    private bool $targetsFromRootDirectory = false;
+    private bool $targetsWithoutCheckingParentDirectories = true;
     private bool $targetsOnlyDirectories = false;
 
     public function asRegExp(): string
@@ -29,9 +29,9 @@ final class PathMatcher
         return $this->targetsMatching;
     }
 
-    public function targetsFromRootDirectory(): bool
+    public function targetsWithoutCheckingParentDirectories(): bool
     {
-        return $this->targetsFromRootDirectory;
+        return $this->targetsWithoutCheckingParentDirectories;
     }
 
     public function targetsOnlyDirectories(): bool
@@ -49,13 +49,13 @@ final class PathMatcher
         $this->targetsMatching = false;
     }
 
-    public function setTargetsFromRootDirectory(): void
+    public function setTargetsCheckingParentDirectories(): void
     {
-        $this->targetsFromRootDirectory = true;
+        $this->targetsWithoutCheckingParentDirectories = false;
     }
 
     public function setTargetsOnlyDirectories(): void
     {
-        $this->targetsFromRootDirectory = true;
+        $this->targetsOnlyDirectories = true;
     }
 }
