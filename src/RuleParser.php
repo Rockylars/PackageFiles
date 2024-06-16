@@ -7,7 +7,9 @@ namespace Rocky\PackageFiles;
 use Exception;
 use Rocky\PackageFiles\PathMatcherComponent\AnyCharacterExceptDirectoryIndicator;
 use Rocky\PackageFiles\PathMatcherComponent\AnyCharactersExceptDirectoryIndicator;
+use Rocky\PackageFiles\PathMatcherComponent\CurrentDirectoryAndAnyLevelSubDirectory;
 use Rocky\PackageFiles\PathMatcherComponent\Character;
+use Rocky\PackageFiles\PathMatcherComponent\DirectorySeparator;
 
 // You must first parse the gitignore to see if a gitattributes file got ignored, that one will not be accounted for.
 // Apparently \ also works for directory paths according to PHPStorm, which will complicate things a lot, it seems to only disable the special characters.
@@ -34,7 +36,7 @@ use Rocky\PackageFiles\PathMatcherComponent\Character;
 // \**\ TODO...???
 
 // xx*       zero to infinite characters
-// xx?       zero to one character(s)
+// xx?       zero to one character(s) TODO: seems to however always just be "one character", check if the other is maybe also one to infinite instead.
 
 // aa\*      escaped special character
 // aa\t      escapes a non special character which leads to the behaviour of /, name search file/folder in subdirectory starting from folder root path, even when not starting with /
@@ -119,8 +121,14 @@ final class RuleParser
                 }
                 // Check for '/'.
                 elseif ($character === '/') {
-                    $rule->setTargetsFromRootDirectory();
                     $canCheckForFirstCharacter = false;
+                    $rule->setTargetsCheckingParentDirectories();
+                    //TODO: What if it ends with /**/?
+                    if ($characters[$i + 1] ?? '' === '*') {
+                        $rule->addPathComponent(new CurrentDirectoryAndAnyLevelSubDirectory());
+                        $i += 3;
+                        continue;
+                    }
                     continue;
                 }
                 else {
@@ -135,7 +143,19 @@ final class RuleParser
             }
             // Check for '/'.
             elseif ($character === '/') {
-                // Lots of stuff.
+                if ($i === $characterCount - 1) {
+                    $rule->setTargetsOnlyDirectories();
+                }
+                //TODO: What if it ends with /**/?
+                elseif ($characters[$i + 1] ?? '' === '*') {
+                    $rule->setTargetsCheckingParentDirectories();
+                    $rule->addPathComponent(new CurrentDirectoryAndAnyLevelSubDirectory());
+                    $i += 3;
+                }
+                else {
+                    $rule->setTargetsCheckingParentDirectories();
+                    $rule->addPathComponent(new DirectorySeparator());
+                }
             }
             // Check for '*'.
             elseif ($character === '*') {

@@ -19,9 +19,9 @@ final class Character implements PathMatcherComponent
         if (in_array($this->character, ['^', '$', '.', '|', '(', ')', '[', ']', '{', '}', '*', '+', '?', '/', '\\'])) {
             // \*
             return self::REG_EXP_ESCAPE . $this->character;
+        } else {
+            // a
+            return $this->character;
         }
-
-        // a
-        return $this->character;
     }
 }
