@@ -44,6 +44,7 @@ final class PackageParser
         self::removeExcludedContent($projectContents);
         self::processGitAttributesFiles($projectContents);
         self::removeExcludedContent($projectContents);
+        //TODO: Add an alternative return where it is a one dimensional array of the full path.
         return self::summarize($projectContents, 1, $resultDepth);
     }
 
@@ -86,6 +87,7 @@ final class PackageParser
     private static function processGitIgnoreFiles(array &$directory): void
     {
         if (array_key_exists('.gitignore', $directory)) {
+            var_dump('---------------');
             $lines = explode("\n", \Safe\file_get_contents($directory['.gitignore']['path']));
             foreach ($lines as $line) {
                 $rule = RuleParser::run($line, false);
@@ -125,8 +127,11 @@ final class PackageParser
         }
     }
 
-    private static function processRule(array &$directory, IgnoreRule $rule): void
+    private static function processRule(array &$directory, PathMatcher $rule): void
     {
+        var_dump($rule->asRegExp());
+        return;
+
         // Rules can not look up, and they will always take the current directory of the .gitignore/.gitattributes file as their root.
         // Rules that counteract the rules before it will run as the new rule for the files/folders it applies to.
         foreach ($directory as $fileOrFolderName => $info) {

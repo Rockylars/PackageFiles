@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Rocky\PackageFiles;
 
 use Exception;
-use Safe\Exceptions\DirException;
-use Safe\Exceptions\FilesystemException;
-use Safe\Exceptions\PcreException;
+use Rocky\PackageFiles\PathMatcherComponent\AnyCharacterExceptDirectoryIndicator;
+use Rocky\PackageFiles\PathMatcherComponent\AnyCharactersExceptDirectoryIndicator;
+use Rocky\PackageFiles\PathMatcherComponent\Character;
 
 // You must first parse the gitignore to see if a gitattributes file got ignored, that one will not be accounted for.
 // Apparently \ also works for directory paths according to PHPStorm, which will complicate things a lot, it seems to only disable the special characters.
@@ -28,6 +28,10 @@ use Safe\Exceptions\PcreException;
 // **/xx     name search file/folder in any lower directory (is supposed to exclude files from this but it does not seem to be the case), this also does a directory search but now starts from anywhere.
 // xx/**/xx  name search file/folder in any subdirectory starting from mentioned root subdirectory which then follows another subdirectory path somewhere down the line
 // xxxx/     name search only folders, files are excluded
+// dfsadf/**/adfdf/**/fdd TODO
+// dadf/**/**/fdd TODO
+// \a\a TODO
+// \**\ TODO...???
 
 // xx*       zero to infinite characters
 // xx?       zero to one character(s)
@@ -45,15 +49,22 @@ use Safe\Exceptions\PcreException;
 // [3]]      range operator to match one character with ] invalid not as first character.
 // [3!]      range operator to match one character with ! valid as not first character.
 // [\]]      range operator to match one character with ] valid as escaped character.
+// [\\] TODO
 
 // [pdf]     ignore git attributes stuff that isn't export-ignore
 // sdfd  ex- have spaces between file and export-ignore
 
 final class RuleParser
 {
-    public static function run(string $line, bool $doExtraThingsForGitAttributes): IgnoreRule|null
+    /**
+     * @throws Exception
+     * <br> > If the line could not be split into characters
+     * <br> > If the line contained zero characters after splitting, which should be impossible as those were already returned.
+     */
+    public static function run(string $line, bool $doExtraThingsForGitAttributes): PathMatcher|null
     {
         //   /dfdf   start with spaces that should be trimmed.
+        //TODO: Check if there's more whitespace characters we need to trim, UTF8 has a bunch of weird invisible characters.
         $line = trim($line);
 
         //           ignore blank lines
@@ -72,16 +83,77 @@ final class RuleParser
                 return null;
             }
 
+            // Remove the ' export-ignore' part to process it like a normal git ignore rule.
+            $line = substr($line, 0, -14);
+
             // sdfd  ex- have spaces between file and export-ignore
-            $line = rtrim(substr($line, 0, -14));
+            $line = rtrim($line);
         }
 
-        $rule = new IgnoreRule(
-            // !/dfdf    inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
-            str_starts_with($line, '!')
-        );
+        $characters = mb_str_split($line);
+        if (!is_array($characters)) {
+            throw new Exception('Could not convert the line \'' . $line . '\' to characters, ' . get_debug_type($characters) . ' returned');
+        }
+        $characterCount = count($characters);
+        if ($characterCount === 0) {
+            throw new Exception('Something went wrong in converting the line \'' . $line . '\' as we should not have received an empty set of characters by this point');
+        }
 
-        
+        $rule = new PathMatcher();
+        $canCheckForFirstCharacter = true;
+        for ($i = 0; $i < $characterCount; $i++) {
+            $character = $characters[$i];
+
+            // Check for first characters, those will not be added as part of the RegExp in a direct way.
+            if ($canCheckForFirstCharacter) {
+                // !/dfdf    inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
+                if ($character === '!') {
+                    if (!in_array($characters[$i + 1] ?? '', ['/', '\\'])) {
+                        $canCheckForFirstCharacter = false;
+                    }
+                    continue;
+                }
+                // Check for '\', has top priority.
+                elseif ($character === '\\') {
+                    // Do a check if this grabs a directory, otherwise handle it as a normal character being escaped.
+                }
+                // Check for '/'.
+                elseif ($character === '/') {
+                    $rule->setTargetsFromRootDirectory();
+                    $canCheckForFirstCharacter = false;
+                    continue;
+                }
+                else {
+                    // Let it stay on this character by going to the checks below.
+                    $canCheckForFirstCharacter = false;
+                }
+            }
+
+            // Check for '\', has top priority.
+            if ($character === '\\') {
+                // Big stuff.
+            }
+            // Check for '/'.
+            elseif ($character === '/') {
+                // Lots of stuff.
+            }
+            // Check for '*'.
+            elseif ($character === '*') {
+                $rule->addPathComponent(new AnyCharactersExceptDirectoryIndicator());
+            }
+            // Check for '?'.
+            elseif ($character === '?') {
+                $rule->addPathComponent(new AnyCharacterExceptDirectoryIndicator());
+            }
+            // Check for '['.
+            elseif ($character === '[') {
+                // Big loop time.
+            }
+            // Otherwise, it is just a normal character, which still needs a RegExp escape character in case it's a '.' or whatnot.
+            else {
+                $rule->addPathComponent(new Character($character));
+            }
+        }
         return $rule;
     }
 }
