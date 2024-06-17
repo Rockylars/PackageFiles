@@ -23,7 +23,7 @@ jobs:
     steps:
       - name: Check out the code so Composer can see our private composer.json file and more
         timeout-minutes: 1
-        uses: actions/checkout@v4.1.6
+        uses: actions/checkout@v4.1.7
 
       - name: Setup PHP with tools
         timeout-minutes: 1
