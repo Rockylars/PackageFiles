@@ -5,14 +5,23 @@ declare(strict_types=1);
 namespace Rocky\PackageFiles\PathMatcherComponent;
 
 use Rocky\PackageFiles\PathMatcher;
-use Rocky\PackageFiles\PathMatcherComponent;
 
-final class CurrentDirectoryAndAnyLevelSubDirectory implements PathMatcherComponent
+final class CurrentDirectoryAndAnyLevelSubDirectory implements PathMatcherComponentInterface
 {
+    public function __construct(
+        private bool $currentDirectoryIsRoot
+    ) {}
+
     /** @inheritDoc */
     public function asRegExp(): string
     {
-        // (?:\/|\/.+\/)
-        return '(?:' . self::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR . '|' . self::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR . '.+' . self::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR  . ')';
+        // We start the paths without a slash.
+        if ($this->currentDirectoryIsRoot) {
+            // (?:^|\/|\/.+\/)
+            return '(?:^|' . PathMatcher::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR . '|' . PathMatcher::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR . '.+' . PathMatcher::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR . ')';
+        } else {
+            // (?:\/|\/.+\/)
+            return '(?:' . PathMatcher::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR . '|' . PathMatcher::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR . '.+' . PathMatcher::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR . ')';
+        }
     }
 }

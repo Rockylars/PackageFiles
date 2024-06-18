@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Rocky\PackageFiles\PathMatcherComponent;
 
-use Rocky\PackageFiles\PathMatcherComponent;
-
-final class CharacterFromList implements PathMatcherComponent
+final class CharacterFromList implements PathMatcherComponentInterface
 {
     // Array of components
     // is excluding

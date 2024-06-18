@@ -129,7 +129,7 @@ final class PackageParser
 
     private static function processRule(array &$directory, PathMatcher $rule): void
     {
-        var_dump($rule->asRegExp());
+        var_dump($rule->asRegExp() . ' => ' . ($rule->targetsOnlyDirectories() ? 'only directories' : 'file/directory match'));
         return;
 
         // Rules can not look up, and they will always take the current directory of the .gitignore/.gitattributes file as their root.

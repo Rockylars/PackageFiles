@@ -110,6 +110,7 @@ final class RuleParser
             if ($canCheckForFirstCharacter) {
                 // !/dfdf    inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
                 if ($character === '!') {
+                    $rule->setTargetsNotMatching();
                     if (!in_array($characters[$i + 1] ?? '', ['/', '\\'])) {
                         $canCheckForFirstCharacter = false;
                     }
@@ -124,11 +125,20 @@ final class RuleParser
                     $canCheckForFirstCharacter = false;
                     $rule->setTargetsCheckingParentDirectories();
                     //TODO: What if it ends with /**/?
-                    if ($characters[$i + 1] ?? '' === '*') {
-                        $rule->addPathComponent(new CurrentDirectoryAndAnyLevelSubDirectory());
+                    if (($characters[$i + 1] ?? '') === '*' && ($characters[$i + 2] ?? '') === '*' && ($characters[$i + 3] ?? '') === '/') {
+                        $rule->addPathComponent(new CurrentDirectoryAndAnyLevelSubDirectory(true));
                         $i += 3;
                         continue;
                     }
+                    continue;
+                }
+                // Check for '**/' specifically.
+                elseif ($character === '*' && ($characters[$i + 1] ?? '') === '*' && ($characters[$i + 2] ?? '') === '/') {
+                    $canCheckForFirstCharacter = false;
+                    $rule->setTargetsCheckingParentDirectories();
+                    //TODO: What if it ends with /**/?
+                    $rule->addPathComponent(new CurrentDirectoryAndAnyLevelSubDirectory(true));
+                    $i += 2;
                     continue;
                 }
                 else {
@@ -147,9 +157,9 @@ final class RuleParser
                     $rule->setTargetsOnlyDirectories();
                 }
                 //TODO: What if it ends with /**/?
-                elseif ($characters[$i + 1] ?? '' === '*') {
+                elseif (($characters[$i + 1] ?? '') === '*' && ($characters[$i + 2] ?? '') === '*' && ($characters[$i + 3] ?? '') === '/') {
                     $rule->setTargetsCheckingParentDirectories();
-                    $rule->addPathComponent(new CurrentDirectoryAndAnyLevelSubDirectory());
+                    $rule->addPathComponent(new CurrentDirectoryAndAnyLevelSubDirectory(false));
                     $i += 3;
                 }
                 else {

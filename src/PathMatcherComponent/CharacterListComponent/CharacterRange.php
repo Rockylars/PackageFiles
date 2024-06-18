@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace Rocky\PackageFiles\PathMatcherComponent\CharacterListComponent;
 
-use Rocky\PackageFiles\PathMatcherComponent;
-
-final class CharacterRange implements PathMatcherComponent\CharacterListComponent
+final class CharacterRange implements CharacterListComponentInterface
 {
     /** @inheritDoc */
     public function asRegExp(): string
