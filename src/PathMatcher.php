@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Rocky\PackageFiles;
 
+use Rocky\PackageFiles\PathMatcherComponent\PathMatcherComponentInterface;
+
 final class PathMatcher
 {
+    public const REG_EXP_ESCAPE = '\\';
     public const DIRECTORY_SEPARATOR = '/';
 
-    /** @var array<int, PathMatcherComponent> */
+    /** @var array<int, PathMatcherComponentInterface> */
     private array $pathComponents = [];
     private bool $targetsMatching = true;
     private bool $targetsWithoutCheckingParentDirectories = true;
@@ -16,12 +19,18 @@ final class PathMatcher
 
     public function asRegExp(): string
     {
-        $regExp = '';
+        if ($this->targetsWithoutCheckingParentDirectories) {
+            // (?:^|^.+\/)
+            $regExp = '(?:^|^.+' . self::REG_EXP_ESCAPE . self::DIRECTORY_SEPARATOR . ')';
+        } else {
+            // ^
+            $regExp = '^';
+        }
         $pathComponentCount = count($this->pathComponents);
         for ($i = 0; $i < $pathComponentCount; $i++) {
             $regExp .= $this->pathComponents[$i]->asRegExp();
         }
-        return $regExp;
+        return $regExp . '$';
     }
 
     public function targetsMatching(): bool
@@ -39,7 +48,7 @@ final class PathMatcher
         return $this->targetsOnlyDirectories;
     }
 
-    public function addPathComponent(PathMatcherComponent $pathMatcherComponent): void
+    public function addPathComponent(PathMatcherComponentInterface $pathMatcherComponent): void
     {
         $this->pathComponents[] = $pathMatcherComponent;
     }
