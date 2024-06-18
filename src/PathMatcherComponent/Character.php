@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Rocky\PackageFiles\PathMatcherComponent;
 
-use Rocky\PackageFiles\PathMatcherComponent;
+use Rocky\PackageFiles\PathMatcher;
 
-final class Character implements PathMatcherComponent
+final class Character implements PathMatcherComponentInterface
 {
     public function __construct(
         private string $character
@@ -18,7 +18,7 @@ final class Character implements PathMatcherComponent
         // If it is a reserved character, an operator in RegExp.
         if (in_array($this->character, ['^', '$', '.', '|', '(', ')', '[', ']', '{', '}', '*', '+', '?', '/', '\\'])) {
             // \*
-            return self::REG_EXP_ESCAPE . $this->character;
+            return PathMatcher::REG_EXP_ESCAPE . $this->character;
         } else {
             // a
             return $this->character;

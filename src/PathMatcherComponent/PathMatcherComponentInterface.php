@@ -2,7 +2,7 @@
 
 namespace Rocky\PackageFiles\PathMatcherComponent;
 
-interface CharacterListComponent
+interface PathMatcherComponentInterface
 {
     /** @return non-empty-string */
     public function asRegExp(): string;
