@@ -44,7 +44,7 @@ jobs:
 
       - name: Raise the PHP version
         timeout-minutes: 1
-        run: composer require php:~${{ matrix.php-version }} --no-interaction --no-update
+        run: composer require "php:${{ matrix.php-version }}.*" --no-interaction --no-update
 
       - name: Run composer update
         timeout-minutes: 1
