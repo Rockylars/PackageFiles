@@ -4,11 +4,72 @@ declare(strict_types=1);
 
 namespace Rocky\PackageFiles\Tests;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
 use Rocky\PackageFiles\PackageParser;
+use Safe\Exceptions\DirException;
+use Safe\Exceptions\FilesystemException;
 
 final class PackageParserTest extends TestCase
 {
+    private const TEST_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . 'fake_project';
+
+    /**
+     * @param array<string, mixed> $fileStructure
+     * @throws FilesystemException
+     */
+    private static function createFileStructure(array $fileStructure, string $directoryPath = self::TEST_DIRECTORY): void
+    {
+        if ($directoryPath === self::TEST_DIRECTORY) {
+            \Safe\mkdir(self::TEST_DIRECTORY);
+        }
+
+        // Unfortunately, i can only check this after creating the first folder.
+        if (!str_starts_with($readablePath = \Safe\realpath($directoryPath), self::TEST_DIRECTORY)) {
+            throw new Exception('Can not alter potentially dangerous path: ' . $readablePath);
+        }
+
+        /**
+         * @var string $fileOrFolderName
+         * @var string|array<string, mixed> $contents
+         */
+        foreach ($fileStructure as $fileOrFolderName => $contents) {
+            $fileOrFolderPath = $directoryPath . DIRECTORY_SEPARATOR . $fileOrFolderName;
+            if (is_array($contents)) {
+                \Safe\mkdir($fileOrFolderPath);
+                self::createFileStructure($contents, $fileOrFolderPath);
+            } else {
+                \Safe\file_put_contents($fileOrFolderPath, $contents);
+            }
+        }
+    }
+
+    /**
+     * Has to go through the whole structure since PHP won't delete filled folders, this is safer anyway.
+     * @throws FilesystemException
+     * @throws DirException
+     */
+    private static function removeFileStructure(string $directoryPath = self::TEST_DIRECTORY): void
+    {
+        if (!str_starts_with($readablePath = \Safe\realpath($directoryPath), self::TEST_DIRECTORY)) {
+            throw new Exception('Can not alter potentially dangerous path: ' . $readablePath);
+        }
+        $contents = \Safe\scandir($directoryPath);
+        $contentCount = count($contents);
+        for ($i = 0; $i < $contentCount; $i++) {
+            $fileOrFolderName = $contents[$i];
+            if (in_array($fileOrFolderName, ['.', '..'], true)) {
+                continue;
+            }
+            if (is_dir($fileOrFolderPath = $directoryPath . DIRECTORY_SEPARATOR . $fileOrFolderName)) {
+                self::removeFileStructure($fileOrFolderPath);
+            } else {
+                unlink($fileOrFolderPath);
+            }
+        }
+        \Safe\rmdir($directoryPath);
+    }
+
     /** @test */
     public static function run_will_parse_the_working_directory_if_no_project_root_is_provided(): void
     {
@@ -118,5 +179,153 @@ final class PackageParserTest extends TestCase
             ],
             PackageParser::run()
         );
+    }
+
+    /** @test */
+    public static function run_can_show_empty_folders_as_array(): void
+    {
+        self::assertSame(
+            [
+                'LICENSE',
+                'README.md',
+                'composer.json',
+                'src' => [
+                    'PackageParser.php',
+                    'PathMatcher.php',
+                    'PathMatcherComponent' => [],
+                    'RuleParser.php',
+                ],
+            ],
+            PackageParser::run(searchDepth: 2, resultDepth: 5, showEmptyFoldersAsArray: true)
+        );
+        self::assertSame(
+            [
+                'LICENSE',
+                'README.md',
+                'composer.json',
+                'src' => [],
+            ],
+            PackageParser::run(showEmptyFoldersAsArray: true)
+        );
+    }
+
+    /** @test */
+    public static function run_will_work_with_an_empty_directory(): void
+    {
+        self::createFileStructure([]);
+        self::assertSame(
+            [],
+            PackageParser::run(self::TEST_DIRECTORY, 10, 10)
+        );
+        self::removeFileStructure();
+    }
+
+    /** @test */
+    public static function run_will_work_with_no_matching_ignores(): void
+    {
+        self::createFileStructure([
+            '.gitignore' => <<<TXT
+something
+TXT,
+            '.gitattributes' => <<<TXT
+something_two export-ignore
+TXT,
+
+        ]);
+        self::assertSame(
+            [
+                '.gitattributes',
+                '.gitignore',
+            ],
+            PackageParser::run(self::TEST_DIRECTORY, 10, 10)
+        );
+        self::removeFileStructure();
+    }
+
+    /** @test */
+    public static function run_will_work_with_the_ability_to_remove_itself(): void
+    {
+        self::createFileStructure([
+            '.gitignore' => <<<TXT
+something
+TXT,
+            '.gitattributes' => <<<TXT
+/.gitignore     export-ignore
+/.gitattributes export-ignore
+TXT,
+
+        ]);
+        self::assertSame(
+            [
+            ],
+            PackageParser::run(self::TEST_DIRECTORY, 10, 10)
+        );
+        self::removeFileStructure();
+    }
+
+    /** @test */
+    public static function run_will_match_any_file_or_directory_matching_the_exact_name(): void
+    {
+        self::createFileStructure([
+            'some_folder' => [
+                'name_a' => '',
+                'name_b' => '',
+                'another_folder' => [
+                    'name_a' => [
+                        'name_b' => ''
+                    ],
+                ]
+            ],
+            'name_a' => '',
+            'name_b' => '',
+            '.gitignore' => <<<TXT
+name_a
+TXT,
+        ]);
+        self::assertSame(
+            [
+                '.gitignore',
+                'name_b',
+                'some_folder' => [
+                    'another_folder',
+                    'name_b',
+                ],
+            ],
+            PackageParser::run(self::TEST_DIRECTORY, 10, 10)
+        );
+        self::removeFileStructure();
+    }
+
+    /** @test */
+    public static function run_will_match_any_directory_matching_the_exact_name(): void
+    {
+        self::createFileStructure([
+            'some_folder' => [
+                'name_a' => '',
+                'name_b' => '',
+                'another_folder' => [
+                    'name_a' => [
+                        'name_b' => ''
+                    ],
+                ]
+            ],
+            'name_a' => '',
+            'name_b' => '',
+            '.gitignore' => <<<TXT
+name_a/
+TXT,
+        ]);
+        self::assertSame(
+            [
+                '.gitignore',
+                'name_b',
+                'some_folder' => [
+                    'another_folder',
+                    'name_b',
+                ],
+            ],
+            PackageParser::run(self::TEST_DIRECTORY, 10, 10)
+        );
+        self::removeFileStructure();
     }
 }
