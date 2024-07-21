@@ -23,6 +23,8 @@ use Rocky\PackageFiles\PathMatcherComponent\DirectorySeparator;
 
 // !/dfdf    inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
 // aa!dfdf   special character ! in file/folder name
+// !  /dfd   inversion with nasty spacer that still works.
+// !  dfdf   inversion with nasty spacer that i'm unsure if it still works.
 
 // /xxxxxx   name search file/folder in root directory only
 // xxxxx     name search file/folder in any lower directory
