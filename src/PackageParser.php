@@ -15,49 +15,48 @@ final class PackageParser
      * @param non-empty-string|null $projectRoot
      * @param int<1, max> $searchDepth
      * @param int<1, max> $resultDepth
+     * @param array<int<0, max>, non-empty-string> $pathsToBigFoldersToSkipDeepSearchOn To skip deep search on bulky things like the "vendor" folder or any compiled JS cache folders that you know will be ignored entirely/mostly anyway.
      * @return array<int, mixed>
-     * <br> > Returns a string array of `$searchDepth` in depth.
      * @throws Exception
-     * <br> > If `$directory` is not a directory
      * @throws FilesystemException
-     * <br> > If the root .gitignore file can not be found
-     * <br> > If the .gitattributes file can not be found
      * @throws DirException
-     * <br> > If $projectRoot is not a directory
      * @throws PcreException
-     * <br> > if the regex breaks
      */
     public static function run(
         string|null $projectRoot = null,
         int $searchDepth = 1,
         int $resultDepth = 1,
-        bool $showEmptyFoldersAsArray = false
+        bool $additionalFormatting = false,
+        bool $resultAsOneDimensionalArray = false,
+        array $pathsToBigFoldersToSkipDeepSearchOn = [],
     ): array
     {
-        //TODO: Add a config to prevent deep searches (or all searches) in certain arrays, such as vendor.
-        $projectRoot = $projectRoot === null ? \Safe\getcwd() : \Safe\realpath($projectRoot);
-
-        //TODO: Test what happens with an empty root directory, we will need to not add an extra separator in those cases, such as the search and the rule processing.
-        //$projectRoot = $projectRoot ?: null;
-        if ($projectRoot === '') {
-            throw new Exception('Add options for this, make sure to not add an extra directory separator');
+        $readableProjectRoot = $projectRoot === null ? \Safe\getcwd() : \Safe\realpath($projectRoot);
+        if ($readableProjectRoot === '' || $readableProjectRoot === DIRECTORY_SEPARATOR) {
+            // If it is supported, make sure you don't add the first directory separator whenever you parse deeper into it.
+            throw new Exception('Currently we do not support putting the project at the direct root of an OS, this is a bad practice due to sensitive folders being there and it being hard to replicate in different testing environments');
         }
 
-        $projectContents = self::search($projectRoot, $searchDepth);
+        $readablePathsToBigFoldersToSkipDeepSearchOn = [];
+        foreach ($pathsToBigFoldersToSkipDeepSearchOn as $pathToBigFoldersToSkipDeepSearchOn) {
+            $readablePathsToBigFoldersToSkipDeepSearchOn[] = \Safe\realpath($pathToBigFoldersToSkipDeepSearchOn);
+        }
+
+        $searchDepth = max($searchDepth, 1);
+        $resultDepth = max($resultDepth, 1);
+
+        $projectContents = self::search($readablePathsToBigFoldersToSkipDeepSearchOn, $readableProjectRoot, $searchDepth);
         self::processGitRulesFiles($projectContents, false);
-        //TODO: Remove these below later.
-        $projectContents['.idea']['included'] = false;
-        $projectContents['output']['included'] = false;
-        $projectContents['vendor']['included'] = false;
-        //TODO: Test what happens if you ignore a gitkeep file, what will happen?
         self::removeExcludedContent($projectContents);
         self::processGitRulesFiles($projectContents, true);
         self::removeExcludedContent($projectContents);
-        //TODO: Add an alternative return where it is a one dimensional array of the full path.
-        return self::summarize($projectContents, $showEmptyFoldersAsArray, $resultDepth);
+        return $resultAsOneDimensionalArray
+            ? self::summarize1D($projectContents, $additionalFormatting, $resultDepth)
+            : self::summarize2D($projectContents, $additionalFormatting, $resultDepth);
     }
 
     /**
+     * @param array<int<0, max>, non-empty-string> $pathsToBigFoldersToSkipDeepSearchOn
      * @param non-empty-string $directoryPath
      * @param int<1, max> $maxDepth
      * @param int<1, max> $currentDepth
@@ -66,7 +65,14 @@ final class PackageParser
      * @return array<non-empty-string, mixed>
      * @throws DirException
      */
-    private static function search(string $directoryPath, int $maxDepth, int $currentDepth = 1, array $route = [], string $localizedDirectoryPath = ''): array
+    private static function search(
+        array $pathsToBigFoldersToSkipDeepSearchOn,
+        string $directoryPath,
+        int $maxDepth,
+        int $currentDepth = 1,
+        array $route = [],
+        string $localizedDirectoryPath = ''
+    ): array
     {
         /** @var array<int, string> $contents */
         $contents = \Safe\scandir($directoryPath);
@@ -93,7 +99,13 @@ final class PackageParser
                 'route' => $deeperRoute = array_merge($route, [$fileOrFolderName])
             ];
             if ($isDir) {
-                $parsedContents[$fileOrFolderName]['contents'] = $currentDepth < $maxDepth ? self::search($path, $maxDepth, $currentDepth + 1, $deeperRoute, $localizedPath) : [];
+                var_dump($path);
+                var_dump($pathsToBigFoldersToSkipDeepSearchOn);
+                var_dump(!in_array($path, $pathsToBigFoldersToSkipDeepSearchOn, true));
+                var_dump($currentDepth < $maxDepth);
+                $parsedContents[$fileOrFolderName]['contents'] = !in_array($path, $pathsToBigFoldersToSkipDeepSearchOn, true) && $currentDepth < $maxDepth
+                    ? self::search($pathsToBigFoldersToSkipDeepSearchOn, $path, $maxDepth, $currentDepth + 1, $deeperRoute, $localizedPath)
+                    : [];
             }
         }
         return $parsedContents;
@@ -187,18 +199,43 @@ final class PackageParser
         }
     }
 
-    private static function summarize(array $directory, bool $showEmptyFoldersAsArray, int $maxDepth, int $currentDepth = 1): array
+    private static function summarize1D(array $directory, bool $showFolderOrFileType, int $maxDepth, int $currentDepth = 1): array
     {
         $contents = [];
         foreach ($directory as $fileOrFolderName => $info) {
             if ($info['is_directory']) {
                 if (count($info['contents']) > 0 && $currentDepth < $maxDepth) {
-                    $contents[$fileOrFolderName] = self::summarize($info['contents'], $showEmptyFoldersAsArray, $maxDepth, $currentDepth + 1);
+                    $contents = array_merge($contents, self::summarize1D($info['contents'], $showFolderOrFileType, $maxDepth, $currentDepth + 1));
+                } else {
+                    if ($showFolderOrFileType) {
+                        $contents[$info['localized_path'] . DIRECTORY_SEPARATOR] = 'folder';
+                    } else {
+                        $contents[] = $info['localized_path'] . DIRECTORY_SEPARATOR;
+                    }
+                }
+            } else {
+                if ($showFolderOrFileType) {
+                    $contents[$info['localized_path']] = 'file';
+                } else {
+                    $contents[] = $info['localized_path'];
+                }
+            }
+        }
+        return $contents;
+    }
+
+    private static function summarize2D(array $directory, bool $showEmptyFoldersAsArray, int $maxDepth, int $currentDepth = 1): array
+    {
+        $contents = [];
+        foreach ($directory as $fileOrFolderName => $info) {
+            if ($info['is_directory']) {
+                if (count($info['contents']) > 0 && $currentDepth < $maxDepth) {
+                    $contents[$fileOrFolderName] = self::summarize2D($info['contents'], $showEmptyFoldersAsArray, $maxDepth, $currentDepth + 1);
                 } else {
                     if ($showEmptyFoldersAsArray) {
                         $contents[$fileOrFolderName] = [];
                     } else {
-                        $contents[] = $fileOrFolderName;
+                        $contents[] = $fileOrFolderName . DIRECTORY_SEPARATOR;
                     }
                 }
             } else {

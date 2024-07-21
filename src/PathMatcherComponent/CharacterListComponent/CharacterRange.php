@@ -10,6 +10,7 @@ final class CharacterRange implements CharacterListComponentInterface
     public function asRegExp(): string
     {
         // a-z
+        //TODO: Build this.
         return '';
     }
 }
