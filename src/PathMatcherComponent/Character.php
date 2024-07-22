@@ -16,7 +16,7 @@ final class Character implements PathMatcherComponentInterface
     public function asRegExp(): string
     {
         // If it is a reserved character, an operator in RegExp.
-        if (in_array($this->character, ['^', '$', '.', '|', '(', ')', '[', ']', '{', '}', '*', '+', '?', '/', '\\'])) {
+        if (in_array($this->character, ['^', '$', '.', '|', '(', ')', '[', ']', '{', '}', '*', '+', '?', '/', '\\'], true)) {
             // \*
             return PathMatcher::REG_EXP_ESCAPE . $this->character;
         } else {

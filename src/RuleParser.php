@@ -14,18 +14,32 @@ use Rocky\PackageFiles\PathMatcherComponent\DirectorySeparator;
 // You must first parse the gitignore to see if a gitattributes file got ignored, that one will not be accounted for.
 // Apparently \ also works for directory paths according to PHPStorm, which will complicate things a lot, it seems to only disable the special characters.
 
+// SPECIAL
+// [pdf]     ignore git attributes stuff that isn't export-ignore
+// #  xxx    ignore comments
+
+// SPACES
+//           folder name that is just spaces without any indicator, this does not match in GIT.
+//      /    folder name that is just spaces but has a character to hold it, this does match.
+// dfdf      spaces after will not match in GIT.
+// dfdf   /  spaces after will match, as long as it has a character to end it.
+// df/df     spaces after with later directory without ending character will not match in GIT.
+//      /    spaces after will not match in GIT.
+//   dfdf    spaces before will count as characters.
+// dfdf      ends with spaces that should all be considered optional
+//    #  xxx ignore comments starting with spaces
+//           ignore blank or whitespace only lines
+// !  /dfd   inversion with spaces as file/folder name characters
+// !  dfdf   inversion with spaces as file/folder name characters
+// sdfd  ex- have spaces between file and export-ignore in .gitattributes, should be considered optional
+
+// INVERSION
 // *.txt     ignoring the rules coming in from above
 // !*.txt    counteracting the rules coming in from above
-
-//   /dfdf   start with spaces that should be trimmed.
-//  #  xxx   ignore comments
-//           ignore blank lines
-
 // !/dfdf    inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
 // aa!dfdf   special character ! in file/folder name
-// !  /dfd   inversion with nasty spacer that still works.
-// !  dfdf   inversion with nasty spacer that i'm unsure if it still works.
 
+// DIRECTORIES
 // /xxxxxx   name search file/folder in root directory only
 // xxxxx     name search file/folder in any lower directory
 // xx/xx     name search file/folder in subdirectory starting from folder root path, even when not starting with /
@@ -34,17 +48,22 @@ use Rocky\PackageFiles\PathMatcherComponent\DirectorySeparator;
 // xxxx/     name search only folders, files are excluded
 // dfsadf/**/adfdf/**/fdd TODO
 // dadf/**/**/fdd TODO
+// xx/**     anything at any level equal or below this
+// xx/**/    anything at any level equal or below this, but just folders
 // \a\a TODO
 // \**\ TODO...???
 
-// xx*       zero to infinite characters
-// xx?       zero to one character(s) TODO: seems to however always just be "one character", check if the other is maybe also one to infinite instead.
+// CHARACTER BLANKS
+// xx*       zero to infinite characters that are not directory indicators
+// xx?       a character that is not a directory indicator
 
+// ESCAPE CHARACTER
 // aa\*      escaped special character
 // aa\t      escapes a non special character which leads to the behaviour of /, name search file/folder in subdirectory starting from folder root path, even when not starting with /
 // aa\\      escaped escape character, not sure why as you can't use this character in a file or directory name.
 // aa\\\\*   chained escaped character solving, very low priority as there's absolutely no use to this.
 
+// RANGE OPERATOR
 // [sS]d.txt range operator to match one character with set
 // [!S]e.txt range operator to match one character with set exclusion
 // [a-z]aa   range operator to match one character with range
@@ -55,46 +74,47 @@ use Rocky\PackageFiles\PathMatcherComponent\DirectorySeparator;
 // [\]]      range operator to match one character with ] valid as escaped character.
 // [\\] TODO
 
-// [pdf]     ignore git attributes stuff that isn't export-ignore
-// sdfd  ex- have spaces between file and export-ignore
-
 final class RuleParser
 {
     /**
+     * This has trouble with beginning/ending spaces in the folder names, something Windows also does not allow.
      * @throws Exception
      * <br> > If the line could not be split into characters
      * <br> > If the line contained zero characters after splitting, which should be impossible as those were already returned.
      */
     public static function run(string $line, bool $doExtraThingsForGitAttributes): PathMatcher|null
     {
-        //   /dfdf   start with spaces that should be trimmed.
-        //TODO: Check if there's more whitespace characters we need to trim, UTF8 has a bunch of weird invisible characters.
-        $line = trim($line);
+        // dfdf      spaces after will not match in GIT.
+        // df/df     spaces after with later directory without ending character will not match in GIT.
+        $line = rtrim($line);
 
         //           ignore blank lines
+        //           folder name that is just spaces without any indicator, this does not match in GIT.
         if ($line === '') {
             return null;
         }
 
         //  #  xxx   ignore comments
-        if (str_starts_with($line, '#')) {
+        //    #  xxx ignore comments starting with spaces
+        if (str_starts_with(ltrim($line), '#')) {
             return null;
         }
 
         if ($doExtraThingsForGitAttributes) {
             // [pdf]     ignore git attributes stuff that isn't export-ignore
-            if (!str_ends_with($line, ' export-ignore')) {
+            if (!str_ends_with($line = rtrim($line), ' export-ignore')) {
                 return null;
             }
 
             // Remove the ' export-ignore' part to process it like a normal git ignore rule.
             $line = substr($line, 0, -14);
 
-            // sdfd  ex- have spaces between file and export-ignore
+            // dfdf      spaces after will not match in GIT.
+            // df/df     spaces after with later directory without ending character will not match in GIT.
             $line = rtrim($line);
         }
 
-        $characters = mb_str_split($line);
+        $characters = mb_str_split($line, encoding: 'UTF-8');
         if (!is_array($characters)) {
             throw new Exception('Could not convert the line \'' . $line . '\' to characters, ' . get_debug_type($characters) . ' returned');
         }
@@ -113,7 +133,7 @@ final class RuleParser
                 // !/dfdf    inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
                 if ($character === '!') {
                     $rule->setTargetsNotMatching();
-                    if (!in_array($characters[$i + 1] ?? '', ['/', '\\'])) {
+                    if (!in_array($characters[$i + 1] ?? '', ['/', '\\'], true)) {
                         $canCheckForFirstCharacter = false;
                     }
                     continue;

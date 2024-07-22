@@ -11,7 +11,7 @@ final class AnyCharacterExceptDirectoryIndicator implements PathMatcherComponent
     /** @inheritDoc */
     public function asRegExp(): string
     {
-        // [^\/]?
-        return '[^' . PathMatcher::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR . ']?';
+        // [^\/]
+        return '[^' . PathMatcher::REG_EXP_ESCAPE . PathMatcher::DIRECTORY_SEPARATOR . ']';
     }
 }

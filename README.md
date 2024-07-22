@@ -1,16 +1,12 @@
 ### Introduction
 This script can be used to quickly see what will be included when you turn your project into a Composer package and release a new version.
-Only in PHP, as I only work in that, but it's so small that you're free to replicate it.
+Only in PHP for now, but it's so small that you're free to replicate it.
+
+Simply call this from your test you put down in your Unit tests folder, or just the tests folder if you only got that.
 
 ### History
 This was originally designed when making [Faker](https://github.com/Rockylars/Faker) an open source package, as I didn't see anyone make this before.
 It's quite handy, just tells you what will go in.
-
-### Usage
-Simply call this from your test you put down in your Unit tests folder, or just the tests folder if you only got that.
-
-### Future
-Finishing off the remaining features for the big project search.
 
 ### Examples
 ```php
@@ -19,11 +15,16 @@ self::assertSame(
         'LICENSE',
         'README.md',
         'composer.json',
-        'src'
+        'src/'
     ],
     PackageParser::run()
 );
 ```
+
+### Limitations
+The `.gitignore` and `.gitattributes` files struggle with file/folder names that start with spaces, end with spaces or are just entirely spaces.
+While this thing is also rather fast, you can speed it up by preventing deep search on things like the `vendor` folder.
+
 
 ### Set up the project for commits on Linux
 1. Have Docker functional, you don't need an account for this.

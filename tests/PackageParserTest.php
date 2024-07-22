@@ -64,7 +64,7 @@ final class PackageParserTest extends TestCase
             if (is_dir($fileOrFolderPath = $directoryPath . DIRECTORY_SEPARATOR . $fileOrFolderName)) {
                 self::removeFileStructure($fileOrFolderPath);
             } else {
-                unlink($fileOrFolderPath);
+                \Safe\unlink($fileOrFolderPath);
             }
         }
         \Safe\rmdir($directoryPath);
@@ -315,7 +315,7 @@ final class PackageParserTest extends TestCase
     }
 
     /** @test */
-    public static function run_can_skip_massive_folders(): void
+    public static function run_can_skip_deep_search_on_massive_folders(): void
     {
         self::assertSame(
             [
