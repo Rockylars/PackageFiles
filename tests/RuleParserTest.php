@@ -6,11 +6,13 @@ namespace Rocky\PackageFiles\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Rocky\PackageFiles\PackageParser;
+use Rocky\PackageFiles\RuleParser;
 
 final class RuleParserTest extends TestCase
 {
     /** @test */
-    public static function run_will_parse_the_working_directory_if_no_project_root_is_provided(): void
+    public static function run_will_strip_trailing_whitespace(): void
     {
+        RuleParser::run('something           ', false);
     }
 }

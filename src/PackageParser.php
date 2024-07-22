@@ -56,7 +56,7 @@ final class PackageParser
     }
 
     /**
-     * @param array<int<0, max>, non-empty-string> $pathsToBigFoldersToSkipDeepSearchOn
+     * @param array<int<0, max>, string> $pathsToBigFoldersToSkipDeepSearchOn
      * @param non-empty-string $directoryPath
      * @param int<1, max> $maxDepth
      * @param int<1, max> $currentDepth
@@ -74,7 +74,7 @@ final class PackageParser
         string $localizedDirectoryPath = ''
     ): array
     {
-        /** @var array<int, string> $contents */
+        /** @var array<int, non-empty-string> $contents */
         $contents = \Safe\scandir($directoryPath);
         $contentCount = count($contents);
 
@@ -85,6 +85,7 @@ final class PackageParser
 
         $parsedContents = [];
         for ($i = 0; $i < $contentCount; $i++) {
+            /** @var non-empty-string $fileOrFolderName */
             $fileOrFolderName = $contents[$i];
             if (in_array($fileOrFolderName, $foldersExcluded, true)) {
                 continue;
@@ -99,39 +100,12 @@ final class PackageParser
                 'route' => $deeperRoute = array_merge($route, [$fileOrFolderName])
             ];
             if ($isDir) {
-                var_dump($path);
-                var_dump($pathsToBigFoldersToSkipDeepSearchOn);
-                var_dump(!in_array($path, $pathsToBigFoldersToSkipDeepSearchOn, true));
-                var_dump($currentDepth < $maxDepth);
                 $parsedContents[$fileOrFolderName]['contents'] = !in_array($path, $pathsToBigFoldersToSkipDeepSearchOn, true) && $currentDepth < $maxDepth
                     ? self::search($pathsToBigFoldersToSkipDeepSearchOn, $path, $maxDepth, $currentDepth + 1, $deeperRoute, $localizedPath)
                     : [];
             }
         }
         return $parsedContents;
-    }
-
-    /**
-     * @param array<non-empty-string, mixed> $directory
-     * @param int<1, max> $currentDepth
-     * @param int<1, max> $maxDepth
-     * @return array<int, mixed>
-     */
-    private static function flattenDirectory(array &$directory, int $maxDepth, int $currentDepth = 1): array
-    {
-        $flatList = [];
-        foreach ($directory as $fileOrFolderName => $info) {
-            $flatList[$info['localized_path']] = [
-                'localized_route' => $info['route'],
-                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a reference here.
-                'data' => &$directory[$fileOrFolderName]
-            ];
-            if ($info['is_directory'] && $currentDepth < $maxDepth) {
-                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a reference here.
-                $flatList = array_merge($flatList, self::flattenDirectory($directory[$fileOrFolderName]['contents'], $maxDepth, $currentDepth + 1));
-            }
-        }
-        return $flatList;
     }
 
     /**
@@ -199,6 +173,21 @@ final class PackageParser
         }
     }
 
+    private static function removeExcludedContent(array &$directory): void
+    {
+        foreach ($directory as $fileOrFolderName => $info) {
+            if ($info['included']) {
+                if ($info['is_directory']) {
+                    self::removeExcludedContent($info['contents']);
+                } else {
+                    continue;
+                }
+            } else {
+                unset($directory[$fileOrFolderName]);
+            }
+        }
+    }
+
     private static function summarize1D(array $directory, bool $showFolderOrFileType, int $maxDepth, int $currentDepth = 1): array
     {
         $contents = [];
@@ -245,18 +234,31 @@ final class PackageParser
         return $contents;
     }
 
-    private static function removeExcludedContent(array &$directory): void
+    /**
+     * For debugging purposes.
+     * @param array<non-empty-string, mixed> $directory
+     * @param int<1, max> $currentDepth
+     * @param int<1, max> $maxDepth
+     * @return array<int, mixed>
+     */
+    private static function flattenDirectory(array &$directory, int $maxDepth, int $currentDepth = 1): array
     {
+        /** @var array<int<0, max>, array<non-empty-string, mixed>> $flatList */
+        $flatList = [];
+        /**
+         * @var array<non-empty-string, non-empty-string|bool|array<int<0, max>, non-empty-string>> $info
+         */
         foreach ($directory as $fileOrFolderName => $info) {
-            if ($info['included']) {
-                if ($info['is_directory']) {
-                    self::removeExcludedContent($info['contents']);
-                } else {
-                    continue;
-                }
-            } else {
-                unset($directory[$fileOrFolderName]);
+            $flatList[$info['localized_path']] = [
+                'localized_route' => $info['route'],
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a reference here.
+                'data' => &$directory[$fileOrFolderName]
+            ];
+            if ($info['is_directory'] && $currentDepth < $maxDepth) {
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a reference here.
+                $flatList = array_merge($flatList, self::flattenDirectory($directory[$fileOrFolderName]['contents'], $maxDepth, $currentDepth + 1));
             }
         }
+        return $flatList;
     }
 }
