@@ -6,7 +6,7 @@ namespace Rocky\PackageFiles\PathMatcherComponent;
 
 use Rocky\PackageFiles\PathMatcher;
 
-final class AnyCharactersExceptDirectoryIndicator implements PathMatcherComponentInterface
+final class NothingOrAnyCharactersExceptDirectoryIndicator implements PathMatcherComponentInterface
 {
     /** @inheritDoc */
     public function asRegExp(): string
