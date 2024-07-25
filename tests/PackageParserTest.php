@@ -81,7 +81,7 @@ final class PackageParserTest extends TestCase
                 'src/PackageParser.php',
                 'src/PathMatcher.php',
                 'src/PathMatcherComponent/AnyCharacterExceptDirectoryIndicator.php',
-                'src/PathMatcherComponent/AnyCharactersExceptDirectoryIndicator.php',
+                'src/PathMatcherComponent/NothingOrAnyCharactersExceptDirectoryIndicator.php',
                 'src/PathMatcherComponent/Character.php',
                 'src/PathMatcherComponent/CharacterFromList.php',
                 'src/PathMatcherComponent/CharacterListComponent/CharacterListComponentInterface.php',
@@ -105,7 +105,7 @@ final class PackageParserTest extends TestCase
                     'PathMatcher.php',
                     'PathMatcherComponent' => [
                         'AnyCharacterExceptDirectoryIndicator.php',
-                        'AnyCharactersExceptDirectoryIndicator.php',
+                        'NothingOrAnyCharactersExceptDirectoryIndicator.php',
                         'Character.php',
                         'CharacterFromList.php',
                         'CharacterListComponent' => [
@@ -185,7 +185,7 @@ final class PackageParserTest extends TestCase
                 'src/PackageParser.php',
                 'src/PathMatcher.php',
                 'src/PathMatcherComponent/AnyCharacterExceptDirectoryIndicator.php',
-                'src/PathMatcherComponent/AnyCharactersExceptDirectoryIndicator.php',
+                'src/PathMatcherComponent/NothingOrAnyCharactersExceptDirectoryIndicator.php',
                 'src/PathMatcherComponent/Character.php',
                 'src/PathMatcherComponent/CharacterFromList.php',
                 'src/PathMatcherComponent/CharacterListComponent/',
@@ -216,7 +216,7 @@ final class PackageParserTest extends TestCase
                     'PathMatcher.php',
                     'PathMatcherComponent' => [
                         'AnyCharacterExceptDirectoryIndicator.php',
-                        'AnyCharactersExceptDirectoryIndicator.php',
+                        'NothingOrAnyCharactersExceptDirectoryIndicator.php',
                         'Character.php',
                         'CharacterFromList.php',
                         'CharacterListComponent/',
