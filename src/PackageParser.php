@@ -178,6 +178,9 @@ final class PackageParser
         }
     }
 
+    /**
+     * @param array<non-empty-string, mixed> $directory
+     */
     private static function removeExcludedContent(array &$directory): void
     {
         foreach ($directory as $fileOrFolderName => $info) {
@@ -194,6 +197,12 @@ final class PackageParser
         }
     }
 
+    /**
+     * @param array<non-empty-string, mixed> $directory
+     * @param int<1, max> $maxDepth
+     * @param int<1, max> $currentDepth
+     * @return array<non-empty-string|int<0, max>, mixed>
+     */
     private static function summarize1D(array $directory, bool $showFolderOrFileType, int $maxDepth, int $currentDepth = 1): array
     {
         $contents = [];
@@ -219,9 +228,18 @@ final class PackageParser
         return $contents;
     }
 
+    /**
+     * @param array<non-empty-string, mixed> $directory
+     * @param int<1, max> $maxDepth
+     * @param int<1, max> $currentDepth
+     * @return array<non-empty-string|int<0, max>, mixed>
+     */
     private static function summarize2D(array $directory, bool $showEmptyFoldersAsArray, int $maxDepth, int $currentDepth = 1): array
     {
         $contents = [];
+        /**
+         * @var non-empty-string $fileOrFolderName
+         */
         foreach ($directory as $fileOrFolderName => $info) {
             if ($info['is_directory']) {
                 if (count($info['contents']) > 0 && $currentDepth < $maxDepth) {

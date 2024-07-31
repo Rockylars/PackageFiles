@@ -5,6 +5,8 @@ parameters:
         - src
         - .php-cs-fixer.php
 
+    reportUnmatchedIgnoredErrors: false
+
     # https://github.com/spaze/phpstan-disallowed-calls
 
     disallowedNamespaces:
