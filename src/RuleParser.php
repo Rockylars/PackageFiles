@@ -55,7 +55,7 @@ use Rocky\PackageFiles\PathMatcherComponent\DirectorySeparator;
 
 // ESCAPE CHARACTER
 // aa\*      [6A] escaped character
-// aa\\*     [6B] escaped escape character, not sure why as you can't use this character in a file or directory name.
+// aa\\*     [6B] escaped escape character.
 // aa\\\*    [6C] chained escaped character with escaped escape character.
 // aa\\\\*   [6D] chained escaped characters.
 
@@ -147,7 +147,9 @@ final class RuleParser
         $rule = new PathMatcher();
         $previousCharacter = '';
         $canCheckForFirstCharacter = true;
+        $isInRangeMatcherLoop = false;
         for ($i = 0; $i < $characterCount; $i++) {
+            /** @var non-empty-string $character */
             $character = $characters[$i];
 
             // //        [1H] ignore anything with two consecutive unescaped directory indicators as empty folder names will never match.
@@ -163,6 +165,7 @@ final class RuleParser
                     $rule->setTargetsNotMatching();
                     continue;
                 }
+                // /xxxxxx   [4A] name search file/folder in root directory only
                 elseif ($character === '/') {
                     $canCheckForFirstCharacter = false;
                     $rule->setTargetsCheckingParentDirectories();
@@ -187,11 +190,22 @@ final class RuleParser
                 }
             }
 
+            if ($isInRangeMatcherLoop) {
+                // TODO: Big loop time.
+                return null;
+            }
+
+            // aa\*      [6A] escaped character
+            // aa\\*     [6B] escaped escape character.
+            // aa\\\*    [6C] chained escaped character with escaped escape character.
+            // aa\\\\*   [6D] chained escaped characters.
             if ($character === '\\') {
                 $rule->addPathComponent(new Character($characters[$i + 1]));
                 $i += 1;
             }
+            // Directory search
             elseif ($character === '/') {
+                // xxxx/     [4G] name search only folders, files are excluded, also works with /**/
                 if ($i === $characterCount - 1) {
                     $rule->setTargetsOnlyDirectories();
                 }
@@ -205,15 +219,19 @@ final class RuleParser
                     $rule->addPathComponent(new DirectorySeparator());
                 }
             }
+            // xx*       [5A] zero to infinite characters that are not directory indicators
             elseif ($character === '*') {
                 $rule->addPathComponent(new NothingOrAnyCharactersExceptDirectoryIndicator());
             }
+            // xx?       [5B] a character that is not a directory indicator
             elseif ($character === '?') {
                 $rule->addPathComponent(new AnyCharacterExceptDirectoryIndicator());
             }
+            // Enter the range operator loop on each character to come.
             elseif ($character === '[') {
-                // TODO: Big loop time.
+                $isInRangeMatcherLoop = true;
             }
+            //   dfdf    [2A] spaces/tabs/other before will count as characters, even entirely whitespace folders by just '   /' for example.
             else {
                 $rule->addPathComponent(new Character($character));
             }
@@ -222,7 +240,7 @@ final class RuleParser
     }
 
     /**
-     * @return array{0: array<int<0, max>, non-empty-string>, 1: int<1, max>}
+     * @return array{0: non-empty-array<int<0, max>, non-empty-string>, 1: int<1, max>}
      * @throws Exception
      */
     private static function splitIgnoreLine(string $line): array
@@ -235,6 +253,7 @@ final class RuleParser
         if ($characterCount === 0) {
             throw new Exception('Something went wrong in converting the line \'' . $line . '\' as we should not have received an empty set of characters by this point');
         }
+        /** @var non-empty-array<int<0, max>, non-empty-string> $characters */
         return [$characters, $characterCount];
     }
 }

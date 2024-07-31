@@ -8,6 +8,7 @@ use Rocky\PackageFiles\PathMatcher;
 
 final class Character implements PathMatcherComponentInterface
 {
+    /** @param non-empty-string $character */
     public function __construct(
         private string $character
     ) {}
