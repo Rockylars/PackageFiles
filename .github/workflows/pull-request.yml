@@ -7,12 +7,18 @@ on: pull_request
 
 jobs:
   tests-and-analyse:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.operating-system }}
     timeout-minutes: 1
     strategy:
       fail-fast: false
       matrix:
+        operating-system:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
         php-version:
+          - "8.0"
+          - "8.1"
           - "8.2"
           - "8.3"
         stability:
@@ -54,12 +60,15 @@ jobs:
 
       - name: Run PHPStan analyze for everything
         timeout-minutes: 1
+        if: matrix.operating-system == 'ubuntu-latest'
         run: vendor/bin/phpstan analyse --configuration=phpstan-all.neon
 
       - name: Run PHPStan analyze for everything but cs fixer
         timeout-minutes: 1
+        if: matrix.operating-system == 'ubuntu-latest'
         run: vendor/bin/phpstan analyse --configuration=phpstan-not-cs-fixer.neon
 
       - name: Run PHPStan analyze for everything but tests
         timeout-minutes: 1
+        if: matrix.operating-system == 'ubuntu-latest'
         run: vendor/bin/phpstan analyse --configuration=phpstan-not-tests.neon

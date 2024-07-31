@@ -21,6 +21,7 @@ use Rocky\PackageFiles\PathMatcherComponent\DirectorySeparator;
 // !/        [1G] ignore nothing matcher.
 // //        [1H] ignore anything with two consecutive unescaped directory indicators as empty folder names will never match.
 // \         [1I] nothing (including no whitespace) behind an unescaped escape character will make it match nothing, also not working as a directory marker.
+// \/        [1J] files or directories can never have a slash in their name, so escaping it will simply match to nothing, this also has a problem of us needing to create our own directory separator for when / is somehow in a file or directory name.
 
 // SPACES
 //   dfdf    [2A] spaces/tabs/other before will count as characters, even entirely whitespace folders by just '   /' for example.
@@ -55,9 +56,9 @@ use Rocky\PackageFiles\PathMatcherComponent\DirectorySeparator;
 
 // ESCAPE CHARACTER
 // aa\*      [6A] escaped character
-// aa\\*     [6B] escaped escape character.
-// aa\\\*    [6C] chained escaped character with escaped escape character.
-// aa\\\\*   [6D] chained escaped characters.
+// aa\\*     [6B] escaped escape character (not testable in Windows, file hides itself in Linux PHPStorm)
+// aa\\\*    [6C] chained escaped character with escaped escape character
+// aa\\\\*   [6D] chained escaped characters
 
 // RANGE OPERATOR
 // [sS]d.txt [7A] range operator to match one character with set
@@ -108,7 +109,8 @@ final class RuleParser
         // /         [1F] ignore nothing matcher.
         // !/        [1G] ignore nothing matcher.
         // //        [1H] ignore anything with two consecutive directory indicators as empty folder names will never match.
-        if (in_array($rightTrimmedLine, ['', '!', '/', '!/', '//', '!//'], true)) {
+        // \/        [1J] files or directories can never have a slash in their name, so escaping it will simply match to nothing, this also has a problem of us needing to create our own directory separator for when / is somehow in a file or directory name.
+        if (in_array($rightTrimmedLine, ['', '!', '/', '!/', '//', '!//', '\/'], true)) {
             return null;
         }
 
@@ -141,22 +143,31 @@ final class RuleParser
                 $characters[] = $charactersWithTrailingWhiteSpace[$characterCount];
                 $characterCount++;
             }
-
         }
 
-        $rule = new PathMatcher();
         $previousCharacter = '';
-        $canCheckForFirstCharacter = true;
-        $isInRangeMatcherLoop = false;
         for ($i = 0; $i < $characterCount; $i++) {
-            /** @var non-empty-string $character */
             $character = $characters[$i];
 
             // //        [1H] ignore anything with two consecutive unescaped directory indicators as empty folder names will never match.
             if ($previousCharacter === '/' && $character === '/') {
+                // Watch out with skips that include this character.
                 return null;
             }
+
+            // \/        [1J] files or directories can never have a slash in their name, so escaping it will simply match to nothing, this also has a problem of us needing to create our own directory separator for when / is somehow in a file or directory name.
+            if ($character === '\\' && $characters[$i + 1] === '/') {
+                return null;
+            }
+
             $previousCharacter = $character;
+        }
+
+        $rule = new PathMatcher();
+        $canCheckForFirstCharacter = true;
+        $isInRangeMatcherLoop = false;
+        for ($i = 0; $i < $characterCount; $i++) {
+            $character = $characters[$i];
 
             // Check for first characters, those will not be added as part of the RegExp in a direct way.
             if ($canCheckForFirstCharacter) {
@@ -196,7 +207,7 @@ final class RuleParser
             }
 
             // aa\*      [6A] escaped character
-            // aa\\*     [6B] escaped escape character.
+            // aa\\*     [6B] escaped escape character (not testable in Windows, file hides itself in Linux PHPStorm)
             // aa\\\*    [6C] chained escaped character with escaped escape character.
             // aa\\\\*   [6D] chained escaped characters.
             if ($character === '\\') {

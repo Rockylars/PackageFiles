@@ -156,7 +156,8 @@ final class PackageParser
         }
 
         foreach ($directory as $fileOrFolderName => $info) {
-            $localizedFileOrFolderPath = $localizedDirectoryPath === '' ? $fileOrFolderName : $localizedDirectoryPath . DIRECTORY_SEPARATOR . $fileOrFolderName;
+            // To ensure the RegExp works the same on all operating systems, we use a consistent slash here.
+            $localizedFileOrFolderPath = $localizedDirectoryPath === '' ? $fileOrFolderName : $localizedDirectoryPath . PathMatcher::DIRECTORY_SEPARATOR . $fileOrFolderName;
             if (\Safe\preg_match('/' . $rule->asRegExp() . '/u', $localizedFileOrFolderPath, $matches)) {
                 // You can have multiple matches, but not per single full path.
                 if (count($matches) > 1) {
