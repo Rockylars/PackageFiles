@@ -19,7 +19,7 @@ abstract class ProjectGeneratingTestCase extends TestCase
      * @param array<string, mixed> $fileStructure
      * @throws FilesystemException
      */
-    final protected static function createFileStructure(array $fileStructure, string $directoryPath = self::TEST_DIRECTORY): void
+    final protected static function createFileStructure(array $fileStructure, bool $allowBackslash = false, string $directoryPath = self::TEST_DIRECTORY): void
     {
         if ($directoryPath === self::TEST_DIRECTORY) {
             \Safe\mkdir(self::TEST_DIRECTORY);
@@ -35,10 +35,13 @@ abstract class ProjectGeneratingTestCase extends TestCase
          * @var string|array<string, mixed> $contents
          */
         foreach ($fileStructure as $fileOrFolderName => $contents) {
+            if (str_contains($fileOrFolderName, '/') || (!$allowBackslash && str_contains($fileOrFolderName, '\\'))) {
+                throw new Exception('Can not create file/directory with a (back)slash in the name');
+            }
             $fileOrFolderPath = $directoryPath . DIRECTORY_SEPARATOR . $fileOrFolderName;
             if (is_array($contents)) {
                 \Safe\mkdir($fileOrFolderPath);
-                self::createFileStructure($contents, $fileOrFolderPath);
+                self::createFileStructure($contents, $allowBackslash, $fileOrFolderPath);
             } else {
                 \Safe\file_put_contents($fileOrFolderPath, $contents);
             }

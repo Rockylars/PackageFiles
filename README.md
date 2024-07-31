@@ -27,6 +27,7 @@ The `.gitignore` and `.gitattributes` files struggle with file/folder names that
 While this thing is also rather fast, you can speed it up by preventing deep search on things like the `vendor` folder.
 
 
+
 ### Set up the project for commits on Linux
 1. Have Docker functional, you don't need an account for this.
 2. Have a GitHub account (obviously) for commits.
