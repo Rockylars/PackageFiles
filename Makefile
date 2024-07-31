@@ -49,7 +49,7 @@ composer:
 test: tests
 tests:
 	rm -rf tests/fake_project
-	${PHP_RUN} php vendor/bin/phpunit tests --testdox --filter="PathMatcherTest"
+	${PHP_RUN} php vendor/bin/phpunit tests --testdox
 
 ## analyze:		Runs PHPStan -> everything
 .PHONY: analyse analyze
