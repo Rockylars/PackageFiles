@@ -11,6 +11,8 @@ use Safe\Exceptions\PcreException;
 
 final class PackageParser
 {
+    public static bool $debugMode = false;
+
     /**
      * @param non-empty-string|null $projectRoot
      * @param int<1, max> $searchDepth
@@ -28,7 +30,7 @@ final class PackageParser
         int $resultDepth = 1,
         bool $additionalFormatting = false,
         bool $resultAsOneDimensionalArray = false,
-        array $pathsToBigFoldersToSkipDeepSearchOn = [],
+        array $pathsToBigFoldersToSkipDeepSearchOn = []
     ): array
     {
         $readableProjectRoot = $projectRoot === null ? \Safe\getcwd() : \Safe\realpath($projectRoot);
@@ -118,7 +120,7 @@ final class PackageParser
     {
         $gitRulesFileName = $isSecondRoundForGitAttributes ? '.gitattributes' : '.gitignore';
         if (array_key_exists($gitRulesFileName, $directory)) {
-            //var_dump('- FILE - ' . $directory[$gitRulesFileName]['path']);
+            self::cliDebugLog('- FILE - ' . $directory[$gitRulesFileName]['path']);
             $lines = explode("\n", \Safe\file_get_contents($directory[$gitRulesFileName]['path']));
             foreach ($lines as $line) {
                 $rule = RuleParser::run($line, $isSecondRoundForGitAttributes);
@@ -128,9 +130,10 @@ final class PackageParser
                 self::processRule($directory, $rule);
             }
         }
+        // It is important that this is done second, so that deeper ignore rules can invert the parent ignore.
         foreach ($directory as $fileOrFolderName => $info) {
             if ($info['is_directory']) {
-                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a reference here.
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
                 self::processGitRulesFiles($directory[$fileOrFolderName]['contents'], $isSecondRoundForGitAttributes);
             }
         }
@@ -154,21 +157,23 @@ final class PackageParser
 
         foreach ($directory as $fileOrFolderName => $info) {
             $localizedFileOrFolderPath = $localizedDirectoryPath === '' ? $fileOrFolderName : $localizedDirectoryPath . DIRECTORY_SEPARATOR . $fileOrFolderName;
-            if (\Safe\preg_match('/'. $rule->asRegExp() . '/u', $localizedFileOrFolderPath, $matches)) {
+            if (\Safe\preg_match('/' . $rule->asRegExp() . '/u', $localizedFileOrFolderPath, $matches)) {
                 // You can have multiple matches, but not per single full path.
                 if (count($matches) > 1) {
                     throw new Exception('Encountered more than one match for ' . $localizedFileOrFolderPath . ' through ' . $rule->asRegExp());
                 }
                 if ($rule->targetsOnlyDirectories() && !$info['is_directory']) {
-                    //var_dump('-- SKIP - NOT DIR ------ ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
+                    self::cliDebugLog('-- SKIP - NOT DIR ------ ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
                     continue;
                 }
-                if ($info['is_directory']) {
-                    // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a reference here.
-                    self::processRule($directory[$fileOrFolderName]['contents'], $rule, $localizedFileOrFolderPath);
-                }
                 $directory[$fileOrFolderName]['included'] = false;
-                //var_dump('-- MATCH --------------- ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
+                self::cliDebugLog('-- MATCH --------------- ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
+            } else {
+                self::cliDebugLog('-- NO MATCH ------------ ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
+            }
+            if ($info['is_directory']) {
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
+                self::processRule($directory[$fileOrFolderName]['contents'], $rule, $localizedFileOrFolderPath);
             }
         }
     }
@@ -178,7 +183,8 @@ final class PackageParser
         foreach ($directory as $fileOrFolderName => $info) {
             if ($info['included']) {
                 if ($info['is_directory']) {
-                    self::removeExcludedContent($info['contents']);
+                    // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
+                    self::removeExcludedContent($directory[$fileOrFolderName]['contents']);
                 } else {
                     continue;
                 }
@@ -251,14 +257,21 @@ final class PackageParser
         foreach ($directory as $fileOrFolderName => $info) {
             $flatList[$info['localized_path']] = [
                 'localized_route' => $info['route'],
-                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a reference here.
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
                 'data' => &$directory[$fileOrFolderName]
             ];
             if ($info['is_directory'] && $currentDepth < $maxDepth) {
-                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a reference here.
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
                 $flatList = array_merge($flatList, self::flattenDirectory($directory[$fileOrFolderName]['contents'], $maxDepth, $currentDepth + 1));
             }
         }
         return $flatList;
+    }
+
+    private static function cliDebugLog(string $debugText): void
+    {
+        if (self::$debugMode) {
+            var_dump($debugText);
+        }
     }
 }
