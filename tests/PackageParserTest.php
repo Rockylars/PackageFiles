@@ -161,7 +161,7 @@ final class PackageParserTest extends ProjectGeneratingTestCase
                 'composer.json' => 'file',
                 'src/PackageParser.php' => 'file',
                 'src/PathMatcher.php' => 'file',
-                'src/PathMatcherComponent/' => 'folder',
+                'src/PathMatcherComponent' => 'folder',
                 'src/RuleParser.php' => 'file',
             ],
             PackageParser::run(searchDepth: 2, resultDepth: 5, additionalFormatting: true, resultAsOneDimensionalArray: true)
@@ -171,7 +171,7 @@ final class PackageParserTest extends ProjectGeneratingTestCase
                 'LICENSE' => 'file',
                 'README.md' => 'file',
                 'composer.json' => 'file',
-                'src/' => 'folder',
+                'src' => 'folder',
             ],
             PackageParser::run(additionalFormatting: true, resultAsOneDimensionalArray: true)
         );

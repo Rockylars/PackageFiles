@@ -11,6 +11,7 @@ use Safe\Exceptions\FilesystemException;
 
 // TODO: When switching to PHP 8.1, make the constant final.
 // TODO: When switching to PHP 8.2, turn this into a trait.
+// TODO: When switching to PHP 8.3, give the constant a string type.
 abstract class ProjectGeneratingTestCase extends TestCase
 {
     protected const TEST_DIRECTORY = __DIR__ . DIRECTORY_SEPARATOR . 'fake_project';

@@ -212,7 +212,7 @@ final class PackageParser
                     $contents = array_merge($contents, self::summarize1D($info['contents'], $showFolderOrFileType, $maxDepth, $currentDepth + 1));
                 } else {
                     if ($showFolderOrFileType) {
-                        $contents[$info['localized_path'] . DIRECTORY_SEPARATOR] = 'folder';
+                        $contents[$info['localized_path']] = 'folder';
                     } else {
                         $contents[] = $info['localized_path'] . DIRECTORY_SEPARATOR;
                     }

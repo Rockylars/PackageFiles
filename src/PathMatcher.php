@@ -39,6 +39,7 @@ final class PathMatcher
     /** @var array<int, PathMatcherComponentInterface> */
     private array $pathComponents = [];
     private bool $toInclude = false;
+
     private bool $targetsWithoutCheckingParentDirectories = true;
     private bool $targetsOnlyDirectories = false;
 
