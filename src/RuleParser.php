@@ -173,7 +173,7 @@ final class RuleParser
             if ($canCheckForFirstCharacter) {
                 // !/dfdf    [3C] inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
                 if ($character === '!') {
-                    $rule->setTargetsNotMatching();
+                    $rule->setToInclude();
                     continue;
                 }
                 // /xxxxxx   [4A] name search file/folder in root directory only

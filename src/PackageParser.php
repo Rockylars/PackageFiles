@@ -99,6 +99,7 @@ final class PackageParser
                 'path' => $path,
                 'localized_path' => $localizedPath,
                 'included' => true,
+                // TODO: Debugging only, inclusion rules can not undo parent directory exclusion by a lower level file's inclusion, only file re-inclusion if the parent directory is still fine.
                 'route' => $deeperRoute = array_merge($route, [$fileOrFolderName])
             ];
             if ($isDir) {
@@ -130,9 +131,12 @@ final class PackageParser
                 self::processRule($directory, $rule);
             }
         }
-        // It is important that this is done second, so that deeper ignore rules can invert the parent ignore.
+        // It is important that this is done second, so that deeper ignore rules can invert the higher level ignore rules.
         foreach ($directory as $fileOrFolderName => $info) {
-            if ($info['is_directory']) {
+            // Lower level rules can not undo effects on higher level directories, if a higher level rule has ignored the lower level rule's parent directory, the lower level rule is disabled, it can not re-include a file/folder as it is ignored entirely.
+            // Lower level rules can also not include a lower level file/folder if any of that file's/folder's parent directories are excluded.
+            // Lower level rules can undo what a higher level rule has done to a same level or lower level file/folder, you can make a lower level rule that reincludes same level or lower level files/folders.
+            if ($info['is_directory'] && $info['included']) {
                 // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
                 self::processGitRulesFiles($directory[$fileOrFolderName]['contents'], $isSecondRoundForGitAttributes);
             }
@@ -148,13 +152,6 @@ final class PackageParser
     {
         // Rules can not look up, and they will always take the current directory of the .gitignore/.gitattributes file as their root.
         // Rules that counteract the rules before it will run as the new rule for the files/folders it applies to.
-        if ($rule->targetsMatching()) {
-            // TODO: Do the preg match and all "matches + is dir if dir targeting is on" will be marked as "not included"
-        } else {
-            // TODO: Do the preg match and all either "not matches" or "matches but is not directory while dir targeting" will be marked as "included"
-            // TODO: Go from the root to the not matched file/folder to mark each of those directories as "included" to ensure an ignore plus include pattern will work, but you only have to do this once.
-        }
-
         foreach ($directory as $fileOrFolderName => $info) {
             // To ensure the RegExp works the same on all operating systems, we use a consistent slash here.
             $localizedFileOrFolderPath = $localizedDirectoryPath === '' ? $fileOrFolderName : $localizedDirectoryPath . PathMatcher::DIRECTORY_SEPARATOR . $fileOrFolderName;
@@ -167,12 +164,14 @@ final class PackageParser
                     self::cliDebugLog('-- SKIP - NOT DIR ------ ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
                     continue;
                 }
-                $directory[$fileOrFolderName]['included'] = false;
+                $directory[$fileOrFolderName]['included'] = $rule->toInclude();
                 self::cliDebugLog('-- MATCH --------------- ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
             } else {
                 self::cliDebugLog('-- NO MATCH ------------ ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
             }
-            if ($info['is_directory']) {
+            // It is important that rule parsing happens before travelling down the directory depths.
+            // We can skip applying rules deeper down if the parent directory is ignored since lower level rules can't undo this.
+            if ($info['is_directory'] && $info['included']) {
                 // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
                 self::processRule($directory[$fileOrFolderName]['contents'], $rule, $localizedFileOrFolderPath);
             }

@@ -6,6 +6,31 @@ namespace Rocky\PackageFiles;
 
 use Rocky\PackageFiles\PathMatcherComponent\PathMatcherComponentInterface;
 
+// included: ex_1f, ex_1d/, ex_2f, ex_2d/
+// excluded: -
+// rule: ignore "/ex_1?" -> exclude match
+// included: ex_2f, ex_2d/
+// excluded: ex_1f, ex_1d/
+
+// included: ex_1f, ex_1d/, ex_2f, ex_2d/
+// excluded: -
+// rule: ignore "/ex_1?/" -> exclude match
+// included: ex_1f, ex_2f, ex_2d/
+// excluded: ex_1d/
+
+// rule: ignore "/ex*" -> exclude match
+// included: -
+// excluded: ex_1f, ex_1d/, ex_2f, ex_2d/
+// rule: ignore "!/ex_1?" -> include match
+// included: ex_1f, ex_1d/
+// excluded: ex_2f, ex_2d/
+
+// rule: ignore "/ex*" -> exclude match
+// included: -
+// excluded: ex_1f, ex_1d/, ex_2f, ex_2d/
+// rule: ignore "!/ex_1?/" -> include match
+// included: ex_1d/
+// excluded: ex_1f, ex_2f, ex_2d/
 final class PathMatcher
 {
     public const REG_EXP_ESCAPE = '\\';
@@ -13,7 +38,7 @@ final class PathMatcher
 
     /** @var array<int, PathMatcherComponentInterface> */
     private array $pathComponents = [];
-    private bool $targetsMatching = true;
+    private bool $toInclude = false;
     private bool $targetsWithoutCheckingParentDirectories = true;
     private bool $targetsOnlyDirectories = false;
 
@@ -33,9 +58,9 @@ final class PathMatcher
         return $regExp . '$';
     }
 
-    public function targetsMatching(): bool
+    public function toInclude(): bool
     {
-        return $this->targetsMatching;
+        return $this->toInclude;
     }
 
     public function targetsWithoutCheckingParentDirectories(): bool
@@ -53,9 +78,9 @@ final class PathMatcher
         $this->pathComponents[] = $pathMatcherComponent;
     }
 
-    public function setTargetsNotMatching(): void
+    public function setToInclude(): void
     {
-        $this->targetsMatching = false;
+        $this->toInclude = true;
     }
 
     public function setTargetsCheckingParentDirectories(): void
