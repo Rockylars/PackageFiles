@@ -23,10 +23,8 @@ self::assertSame(
 ```
 
 ### Limitations
-The `.gitignore` and `.gitattributes` files struggle with file/folder names that start with spaces, end with spaces or are just entirely spaces.
-While this thing is also rather fast, you can speed it up by preventing deep search on things like the `vendor` folder.
-
-
+- The `.gitignore` and `.gitattributes` files struggle with file/folder names that start with spaces, end with spaces or are just entirely spaces.
+- While this thing is also rather fast, you can speed it up by preventing deep search on things like the `vendor` folder.
 
 ### Set up the project for commits on Linux
 1. Have Docker functional, you don't need an account for this.
@@ -64,7 +62,8 @@ While this thing is also rather fast, you can speed it up by preventing deep sea
 - The `.gitattribute` file can be put on multiple levels and will take that as it's root, they are found automatically and just the same as `.gitignore` files.
 - Patterns can not look upwards on the file tree.
 - Patterns for the `.gitattributes` `export-ignore` are the same as those for `.gitignore`.
-- Lower files can cancel out upper files, so a name match will be cancelled out by a lower not match.
+- Lower rule files can cancel out upper rule files, so a name match will be cancelled out by a lower not match.
+- Lower rule files can not cancel out parent directories being ignored even when re-including a lower file/directory, meaning that those lower rule files don't have to run.
 - You can ignore lower `.gitignore` and `.gitattributes` files.
 
 Testing what `.gitattributes` does is a journey, but the easiest way I've found just make a branch and commit your stuff into it, where you can confirm it behaves just like `.gitignore`.

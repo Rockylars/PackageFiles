@@ -26,6 +26,7 @@
     "prefer-stable": true,
     "require": {
         "php": ">=8.0",
+        "ext-mbstring": "*",
         "thecodingmachine/safe": ">=2.5"
     },
     "require-dev": {

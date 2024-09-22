@@ -24,19 +24,20 @@ use Rocky\PackageFiles\PathMatcherComponent\DirectorySeparator;
 // \/        [1J] files or directories can never have a slash in their name, so escaping it will simply match to nothing, this also has a problem of us needing to create our own directory separator for when / is somehow in a file or directory name.
 
 // SPACES
+// TODO: Add a case for "/   a", "!/   a/", "xx/    a" and "xx/    a/".
+
 //   dfdf    [2A] spaces/tabs/other before will count as characters, even entirely whitespace folders by just '   /' for example.
 // dfdf      [2B] spaces/tabs/other after will not match in GIT.
 // dfdf\     [2C] one trailing space/tab/other after will match for each backslash.
 // dfdf   /  [2D] spaces/tabs/other after will match, as long as it has a character to end it.
-// !  dfdf   [2E] inversion with spaces as file/folder name characters
+// !  dfdf   [2E] inclusion with spaces as file/folder name characters
 // sdfd  ex- [2F] spaces/tabs/other file between export-ignore in .gitattributes are ignored and follow the same rules as the other ones.
 // -nore     [2G] spaces/tabs/other file after export-ignore in .gitattributes are ignored and follow the same rules as the other ones.
 
-// INVERSION
-// *.txt     [3A] ignoring the rules coming in from above
-// !*.txt    [3B] counteracting the rules coming in from above
-// !/dfdf    [3C] inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
-// aa!dfdf   [3D] special character ! in file/folder name
+// INCLUSION (allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inclusion will exclude the whole folder except the path towards this included file/folder, this can also have new ignores on top of it again as it is order based)
+// !*.txt    [3A] including an excluded file by a parent rule.
+// !/dfdf    [3B] including an excluded file by a parent rule in root directory only
+// aa!dfdf   [3C] special character ! in file/folder name behaves as a normal character.
 
 // DIRECTORIES
 // /xxxxxx   [4A] name search file/folder in root directory only
@@ -171,7 +172,7 @@ final class RuleParser
 
             // Check for first characters, those will not be added as part of the RegExp in a direct way.
             if ($canCheckForFirstCharacter) {
-                // !/dfdf    [3C] inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
+                // !/dfdf    [3B] inversion, allows you to ignore certain parts of a rule, such as a whole folder ignore with a file/folder match inversion will exclude the whole folder except the path towards this inverted file/folder, this can also have new ignores on top of it again as it is order based.
                 if ($character === '!') {
                     $rule->setToInclude();
                     continue;
@@ -243,6 +244,7 @@ final class RuleParser
                 $isInRangeMatcherLoop = true;
             }
             //   dfdf    [2A] spaces/tabs/other before will count as characters, even entirely whitespace folders by just '   /' for example.
+            // !  dfdf   [2E] inversion with spaces as file/folder name characters
             else {
                 $rule->addPathComponent(new Character($character));
             }
