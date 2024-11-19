@@ -1,5 +1,6 @@
 ### Introduction
 This script can be used to quickly see what will be included when you turn your project into a Composer package and release a new version.
+Also includes an option to check what you are sending to your repository.
 
 Simply call this from your test you put down in your Unit tests folder, or just the tests folder if you only got that.
 
@@ -11,6 +12,15 @@ The 2nd version has taken it from a simple root directory/file matcher to a recu
 
 ### Examples
 ```php
+self::assertSame(
+    [
+        'LICENSE',
+        'README.md',
+        'composer.json',
+        'src/'
+    ],
+    PackageParser::run(onlyForRepository: true)
+);
 self::assertSame(
     [
         'LICENSE',

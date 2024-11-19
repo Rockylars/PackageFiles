@@ -8,6 +8,66 @@ use Rocky\PackageFiles\PackageParser;
 
 final class PackageParserTest extends ProjectGeneratingTestCase
 {
+    /** @test */
+    public static function run_will_work_with_an_empty_directory(): void
+    {
+        self::createFileStructure([]);
+        self::assertSame(
+            [],
+            PackageParser::run(self::TEST_DIRECTORY, 10, 10)
+        );
+        self::removeFileStructure();
+    }
+
+    /** @test */
+    public static function run_will_parse_the_working_directory_if_no_project_root_is_provided(): void
+    {
+        self::assertSame(
+            $result = [
+                'LICENSE',
+                'README.md',
+                'composer.json',
+                'src' => [
+                    'PackageParser.php',
+                    'PathMatcher.php',
+                    'PathMatcherComponent' => [
+                        'AnyCharacterExceptDirectoryIndicator.php',
+                        'Anything.php',
+                        'Character.php',
+                        'CharacterFromList.php',
+                        'CharacterListComponent' => [
+                            'CharacterListComponentInterface.php',
+                            'CharacterRange.php',
+                        ],
+                        'CurrentDirectoryAndAnyLevelSubDirectory.php',
+                        'DirectorySeparator.php',
+                        'NothingOrAnyCharactersExceptDirectoryIndicator.php',
+                        'PathMatcherComponentInterface.php',
+                    ],
+                    'RuleParser.php',
+                ],
+            ],
+            PackageParser::run(__DIR__ . DIRECTORY_SEPARATOR . '..', 5, 5)
+        );
+        self::assertSame($result, PackageParser::run(searchDepth: 5, resultDepth: 5));
+    }
+
+    /** @test */
+    public static function run_can_skip_deep_search_on_massive_folders(): void
+    {
+        self::assertSame(
+            [
+                'LICENSE',
+                'README.md',
+                'composer.json',
+                'src/'
+            ],
+            PackageParser::run(searchDepth: 10, resultDepth: 10, pathsToBigFoldersToSkipDeepSearchOn: [
+                __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'src',
+                __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'vendor'
+            ])
+        );
+    }
 
     /** @test */
     public static function run_will_reduce_the_search_depth_if_provided(): void
@@ -152,57 +212,34 @@ final class PackageParserTest extends ProjectGeneratingTestCase
     }
 
     /** @test */
-    public static function run_can_add_additional_formatting(): void
+    public static function run_can_check_what_will_be_included_in_the_repository(): void
     {
         self::assertSame(
             [
-                'LICENSE' => 'file',
-                'README.md' => 'file',
-                'composer.json' => 'file',
-                'src/PackageParser.php' => 'file',
-                'src/PathMatcher.php' => 'file',
-                'src/PathMatcherComponent' => 'folder',
-                'src/RuleParser.php' => 'file',
-            ],
-            PackageParser::run(searchDepth: 2, resultDepth: 5, additionalFormatting: true, resultAsOneDimensionalArray: true)
-        );
-        self::assertSame(
-            [
-                'LICENSE' => 'file',
-                'README.md' => 'file',
-                'composer.json' => 'file',
-                'src' => 'folder',
-            ],
-            PackageParser::run(additionalFormatting: true, resultAsOneDimensionalArray: true)
-        );
-
-        self::assertSame(
-            [
+                '.gitattributes',
+                '.github/',
+                '.gitignore',
+                '.php-cs-fixer.php',
                 'LICENSE',
+                'Makefile',
                 'README.md',
                 'composer.json',
-                'src' => [
-                    'PackageParser.php',
-                    'PathMatcher.php',
-                    'PathMatcherComponent' => [],
-                    'RuleParser.php',
-                ],
+                'composer.lock',
+                'docker/',
+                'docker-compose.yml',
+                'phpstan-all-baseline.neon',
+                'phpstan-all.neon',
+                'phpstan-not-cs-fixer.neon',
+                'phpstan-not-tests.neon',
+                'src/',
+                'tests/'
             ],
-            PackageParser::run(searchDepth: 2, resultDepth: 5, additionalFormatting: true)
-        );
-        self::assertSame(
-            [
-                'LICENSE',
-                'README.md',
-                'composer.json',
-                'src' => [],
-            ],
-            PackageParser::run(additionalFormatting: true)
+            PackageParser::run(onlyForRepository: true)
         );
     }
 
     /** @test */
-    public static function run_can_skip_deep_search_on_massive_folders(): void
+    public static function run_can_return_the_result_in_a_one_dimensional_array(): void
     {
         self::assertSame(
             [
@@ -211,66 +248,22 @@ final class PackageParserTest extends ProjectGeneratingTestCase
                 'composer.json',
                 'src/'
             ],
-            PackageParser::run(searchDepth: 10, resultDepth: 10, resultAsOneDimensionalArray: true, pathsToBigFoldersToSkipDeepSearchOn: [
-                __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'src',
-                __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'vendor'
-            ])
+            PackageParser::run(resultAsOneDimensionalArray: true)
         );
         self::assertSame(
             [
                 'LICENSE',
                 'README.md',
                 'composer.json',
-                'src/'
+                'src/PackageParser.php',
+                'src/PathMatcher.php',
+                'src/PathMatcherComponent/',
+                'src/RuleParser.php'
             ],
-            PackageParser::run(resultAsOneDimensionalArray: true, pathsToBigFoldersToSkipDeepSearchOn: [
-                __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'src',
-                __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'vendor'
-            ])
-        );
-
-        self::assertSame(
-            [
-                'LICENSE',
-                'README.md',
-                'composer.json',
-                'src/'
-            ],
-            PackageParser::run(searchDepth: 10, resultDepth: 10, pathsToBigFoldersToSkipDeepSearchOn: [
-                __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'src',
-                __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'vendor'
-            ])
+            PackageParser::run(searchDepth: 2, resultDepth: 5, resultAsOneDimensionalArray: true)
         );
         self::assertSame(
             [
-                'LICENSE',
-                'README.md',
-                'composer.json',
-                'src/'
-            ],
-            PackageParser::run(pathsToBigFoldersToSkipDeepSearchOn: [
-                __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'src',
-                __DIR__ . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR . 'vendor'
-            ])
-        );
-    }
-
-    /** @test */
-    public static function run_will_work_with_an_empty_directory(): void
-    {
-        self::createFileStructure([]);
-        self::assertSame(
-            [],
-            PackageParser::run(self::TEST_DIRECTORY, 10, 10)
-        );
-        self::removeFileStructure();
-    }
-
-    /** @test */
-    public static function run_will_parse_the_working_directory_if_no_project_root_is_provided(): void
-    {
-        self::assertSame(
-            $result1D = [
                 'LICENSE',
                 'README.md',
                 'composer.json',
@@ -288,38 +281,39 @@ final class PackageParserTest extends ProjectGeneratingTestCase
                 'src/PathMatcherComponent/PathMatcherComponentInterface.php',
                 'src/RuleParser.php'
             ],
-            PackageParser::run(__DIR__ . DIRECTORY_SEPARATOR . '..', 5, 5, resultAsOneDimensionalArray: true)
+            PackageParser::run(searchDepth: 5, resultDepth: 5, resultAsOneDimensionalArray: true)
         );
-        self::assertSame($result1D, PackageParser::run(searchDepth: 5, resultDepth: 5, resultAsOneDimensionalArray: true));
+    }
 
+    /** @test */
+    public static function run_can_add_additional_formatting_to_the_result(): void
+    {
         self::assertSame(
-            $result2D = [
+            [
+                'LICENSE' => 'file',
+                'README.md' => 'file',
+                'composer.json' => 'file',
+                'src/PackageParser.php' => 'file',
+                'src/PathMatcher.php' => 'file',
+                'src/PathMatcherComponent' => 'folder',
+                'src/RuleParser.php' => 'file',
+            ],
+            PackageParser::run(searchDepth: 2, resultDepth: 5, additionalFormatting: true, resultAsOneDimensionalArray: true)
+        );
+        self::assertSame(
+            [
                 'LICENSE',
                 'README.md',
                 'composer.json',
                 'src' => [
                     'PackageParser.php',
                     'PathMatcher.php',
-                    'PathMatcherComponent' => [
-                        'AnyCharacterExceptDirectoryIndicator.php',
-                        'Anything.php',
-                        'Character.php',
-                        'CharacterFromList.php',
-                        'CharacterListComponent' => [
-                            'CharacterListComponentInterface.php',
-                            'CharacterRange.php',
-                        ],
-                        'CurrentDirectoryAndAnyLevelSubDirectory.php',
-                        'DirectorySeparator.php',
-                        'NothingOrAnyCharactersExceptDirectoryIndicator.php',
-                        'PathMatcherComponentInterface.php',
-                    ],
+                    'PathMatcherComponent' => [],
                     'RuleParser.php',
                 ],
             ],
-            PackageParser::run(__DIR__ . DIRECTORY_SEPARATOR . '..', 5, 5)
+            PackageParser::run(searchDepth: 2, resultDepth: 5, additionalFormatting: true)
         );
-        self::assertSame($result2D, PackageParser::run(searchDepth: 5, resultDepth: 5));
     }
 
     /** @test */

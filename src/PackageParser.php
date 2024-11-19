@@ -17,6 +17,7 @@ final class PackageParser
      * @param non-empty-string|null $projectRoot
      * @param int<1, max> $searchDepth
      * @param int<1, max> $resultDepth
+     * @param bool $onlyForRepository Only check what will be ignored for the repository
      * @param array<int<0, max>, non-empty-string> $pathsToBigFoldersToSkipDeepSearchOn To skip deep search on bulky things like the "vendor" folder or any compiled JS cache folders that you know will be ignored entirely/mostly anyway.
      * @return array<int, mixed>
      * @throws Exception
@@ -28,6 +29,7 @@ final class PackageParser
         string|null $projectRoot = null,
         int $searchDepth = 1,
         int $resultDepth = 1,
+        bool $onlyForRepository = false,
         bool $additionalFormatting = false,
         bool $resultAsOneDimensionalArray = false,
         array $pathsToBigFoldersToSkipDeepSearchOn = []
@@ -50,8 +52,10 @@ final class PackageParser
         $projectContents = self::search($readablePathsToBigFoldersToSkipDeepSearchOn, $readableProjectRoot, $searchDepth);
         self::processGitRulesFiles($projectContents, false);
         self::removeExcludedContent($projectContents);
-        self::processGitRulesFiles($projectContents, true);
-        self::removeExcludedContent($projectContents);
+        if (!$onlyForRepository) {
+            self::processGitRulesFiles($projectContents, true);
+            self::removeExcludedContent($projectContents);
+        }
         return $resultAsOneDimensionalArray
             ? self::summarize1D($projectContents, $additionalFormatting, $resultDepth)
             : self::summarize2D($projectContents, $additionalFormatting, $resultDepth);

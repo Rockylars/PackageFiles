@@ -1,6 +1,6 @@
 parameters:
     level: 8
-    tmpDir: output/cache/phpstan
+    tmpDir: output/cache/phpstan/all
     paths:
         - src
         - tests
