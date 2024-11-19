@@ -31,6 +31,7 @@ parameters:
             namespace:
                 - PHPStan\*
                 - Spaze\PHPStan\*
+                - TheCodingMachine\Safe\PHPStan\*
             message: 'these are not meant to be accessed'
 
     disallowedMethodCalls:

@@ -60,6 +60,8 @@ use Rocky\PackageFiles\PathMatcherComponent\DirectorySeparator;
 // aa\\*     [6B] escaped escape character (not testable in Windows, file hides itself in Linux PHPStorm)
 // aa\\\*    [6C] chained escaped character with escaped escape character
 // aa\\\\*   [6D] chained escaped characters
+// abc\def   [6E] escaped normal character? Or does it just think it is the backslash in a folder?
+// abc/\def  [6F] escaped normal character as first character? Or does it just think it is the backslash in a folder?
 
 // RANGE OPERATOR
 // [sS]d.txt [7A] range operator to match one character with set
@@ -151,13 +153,9 @@ final class RuleParser
             $character = $characters[$i];
 
             // //        [1H] ignore anything with two consecutive unescaped directory indicators as empty folder names will never match.
-            if ($previousCharacter === '/' && $character === '/') {
-                // Watch out with skips that include this character.
-                return null;
-            }
-
             // \/        [1J] files or directories can never have a slash in their name, so escaping it will simply match to nothing, this also has a problem of us needing to create our own directory separator for when / is somehow in a file or directory name.
-            if ($character === '\\' && $characters[$i + 1] === '/') {
+            if (($previousCharacter === '/' || $previousCharacter === '\\') && $character === '/') {
+                // Watch out with skips that include this character.
                 return null;
             }
 
