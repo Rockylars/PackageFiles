@@ -1,2 +1,13 @@
 parameters:
-	ignoreErrors: []
+	ignoreErrors:
+		-
+			message: '#^Cannot access offset 1 on iterable\<\(int\|string\), string\>\|null\.$#'
+			identifier: offsetAccess.nonOffsetAccessible
+			count: 1
+			path: src/PackageParser.php
+
+		-
+			message: '#^Parameter &\$filesOrFoldersExcluded by\-ref type of method Rocky\\PackageFiles\\PackageParser\:\:matchFileContents\(\) expects array\<int, string\>, array\<int, mixed\> given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: src/PackageParser.php
