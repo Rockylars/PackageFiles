@@ -58,6 +58,7 @@ final class PackageParser
         foreach ($lines as $line) {
             $matches = [];
             if (\Safe\preg_match($matcher, $line, $matches)) {
+                /** @phpstan-ignore-next-line */
                 $filesOrFoldersExcluded[] = $matches[1];
             }
         }
