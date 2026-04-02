@@ -11,56 +11,289 @@ use Safe\Exceptions\PcreException;
 
 final class PackageParser
 {
+    public static bool $debugMode = false;
+
     /**
-     * @return array<int, string>
-     *
-     * @throws Exception <br> > if $projectRoot is not a directory
-     * @throws FilesystemException <br> > if the root .gitignore file can not be found <br> > if the .gitattributes file can not be found
-     * @throws DirException <br> > if $projectRoot is not a directory
-     * @throws PcreException <br> > if the regex breaks
+     * @param non-empty-string|null $projectRoot
+     * @param int<1, max> $searchDepth
+     * @param int<1, max> $resultDepth
+     * @param bool $onlyForRepository Only check what will be ignored for the repository
+     * @param array<int<0, max>, non-empty-string> $pathsToBigFoldersToSkipDeepSearchOn To skip deep search on bulky things like the "vendor" folder or any compiled JS cache folders that you know will be ignored entirely/mostly anyway.
+     * @return array<int, mixed>
+     * @throws Exception
+     * @throws FilesystemException
+     * @throws DirException
+     * @throws PcreException
      */
-    public static function simplePackageSearch(string $projectRoot): array
+    public static function run(
+        string|null $projectRoot = null,
+        int $searchDepth = 1,
+        int $resultDepth = 1,
+        bool $onlyForRepository = false,
+        bool $additionalFormatting = false,
+        bool $resultAsOneDimensionalArray = false,
+        array $pathsToBigFoldersToSkipDeepSearchOn = []
+    ): array
     {
-        $filesOrFoldersExcluded = ['.', '..', '.git'];
-
-        if (!is_dir($projectRoot)) {
-            throw new Exception('"' . $projectRoot . '" is not a directory');
+        $readableProjectRoot = $projectRoot === null ? \Safe\getcwd() : \Safe\realpath($projectRoot);
+        if ($readableProjectRoot === '' || $readableProjectRoot === DIRECTORY_SEPARATOR) {
+            // If it is supported, make sure you don't add the first directory separator whenever you parse deeper into it.
+            throw new Exception('Currently we do not support putting the project at the direct root of an OS, this is a bad practice due to sensitive folders being there and it being hard to replicate in different testing environments');
         }
 
-        $gitIgnore = \Safe\file_get_contents($projectRoot . DIRECTORY_SEPARATOR . '.gitignore');
-        self::matchFileContents($gitIgnore, '/^\/(.*?)\/?$/', $filesOrFoldersExcluded);
-
-        $gitAttributes = \Safe\file_get_contents($projectRoot . DIRECTORY_SEPARATOR . '.gitattributes');
-        self::matchFileContents($gitAttributes, '/^\/(.*?)\/? *export-ignore$/', $filesOrFoldersExcluded);
-
-        /** @var array<int, string> $project */
-        $project = \Safe\scandir($projectRoot);
-
-        $result = [];
-        foreach ($project as $projectContents) {
-            if (!in_array($projectContents, $filesOrFoldersExcluded, true)) {
-                $result[] = $projectContents;
-            }
+        $readablePathsToBigFoldersToSkipDeepSearchOn = [];
+        foreach ($pathsToBigFoldersToSkipDeepSearchOn as $pathToBigFoldersToSkipDeepSearchOn) {
+            $readablePathsToBigFoldersToSkipDeepSearchOn[] = \Safe\realpath($pathToBigFoldersToSkipDeepSearchOn);
         }
-        return $result;
+
+        $searchDepth = max($searchDepth, 1);
+        $resultDepth = max($resultDepth, 1);
+
+        $projectContents = self::search($readablePathsToBigFoldersToSkipDeepSearchOn, $readableProjectRoot, $searchDepth);
+        self::processGitRulesFiles($projectContents, false);
+        self::removeExcludedContent($projectContents);
+        if (!$onlyForRepository) {
+            self::processGitRulesFiles($projectContents, true);
+            self::removeExcludedContent($projectContents);
+        }
+        return $resultAsOneDimensionalArray
+            ? self::summarize1D($projectContents, $additionalFormatting, $resultDepth)
+            : self::summarize2D($projectContents, $additionalFormatting, $resultDepth);
     }
 
     /**
-     * @param string $fileContents
-     * @param string $matcher
-     * @param array<int, string> $filesOrFoldersExcluded
-     * @return void
-     * @throws PcreException <br> > if the regex breaks
+     * @param array<int<0, max>, string> $pathsToBigFoldersToSkipDeepSearchOn
+     * @param non-empty-string $directoryPath
+     * @param int<1, max> $maxDepth
+     * @param int<1, max> $currentDepth
+     * @param array<int<0, max>, non-empty-string> $route
+     * @param string $localizedDirectoryPath
+     * @return array<non-empty-string, mixed>
+     * @throws DirException
      */
-    private static function matchFileContents(string $fileContents, string $matcher, array &$filesOrFoldersExcluded): void
+    private static function search(
+        array $pathsToBigFoldersToSkipDeepSearchOn,
+        string $directoryPath,
+        int $maxDepth,
+        int $currentDepth = 1,
+        array $route = [],
+        string $localizedDirectoryPath = ''
+    ): array
     {
-        $lines = explode("\n", $fileContents);
-        foreach ($lines as $line) {
-            $matches = [];
-            if (\Safe\preg_match($matcher, $line, $matches)) {
-                /** @phpstan-ignore-next-line */
-                $filesOrFoldersExcluded[] = $matches[1];
+        /** @var array<int, non-empty-string> $contents */
+        $contents = \Safe\scandir($directoryPath);
+        $contentCount = count($contents);
+
+        $foldersExcluded = ['.', '..'];
+        if ($isInProjectRoot = $currentDepth === 1) {
+            $foldersExcluded[] = '.git';
+        }
+
+        $parsedContents = [];
+        for ($i = 0; $i < $contentCount; $i++) {
+            /** @var non-empty-string $fileOrFolderName */
+            $fileOrFolderName = $contents[$i];
+            if (in_array($fileOrFolderName, $foldersExcluded, true)) {
+                continue;
             }
+            // TODO: Test issues with string integers folder names.
+            $localizedPath = $isInProjectRoot ? $fileOrFolderName : $localizedDirectoryPath . DIRECTORY_SEPARATOR . $fileOrFolderName;
+            $parsedContents[$fileOrFolderName] = [
+                'is_directory' => $isDir = is_dir($path = $directoryPath . DIRECTORY_SEPARATOR . $fileOrFolderName),
+                'path' => $path,
+                'localized_path' => $localizedPath,
+                'included' => true,
+                // TODO: Debugging only, inclusion rules can not undo parent directory exclusion by a lower level file's inclusion, only file re-inclusion if the parent directory is still fine.
+                'route' => $deeperRoute = array_merge($route, [$fileOrFolderName])
+            ];
+            if ($isDir) {
+                $parsedContents[$fileOrFolderName]['contents'] = !in_array($path, $pathsToBigFoldersToSkipDeepSearchOn, true) && $currentDepth < $maxDepth
+                    ? self::search($pathsToBigFoldersToSkipDeepSearchOn, $path, $maxDepth, $currentDepth + 1, $deeperRoute, $localizedPath)
+                    : [];
+            }
+        }
+        return $parsedContents;
+    }
+
+    /**
+     * @param array<non-empty-string, mixed> $directory
+     * @throws FilesystemException
+     * @throws PcreException
+     * @throws Exception
+     */
+    private static function processGitRulesFiles(array &$directory, bool $isSecondRoundForGitAttributes): void
+    {
+        $gitRulesFileName = $isSecondRoundForGitAttributes ? '.gitattributes' : '.gitignore';
+        if (array_key_exists($gitRulesFileName, $directory)) {
+            self::cliDebugLog('- FILE - ' . $directory[$gitRulesFileName]['path']);
+            $lines = explode("\n", \Safe\file_get_contents($directory[$gitRulesFileName]['path']));
+            foreach ($lines as $line) {
+                $rule = RuleParser::run($line, $isSecondRoundForGitAttributes);
+                if ($rule === null) {
+                    continue;
+                }
+                self::processRule($directory, $rule);
+            }
+        }
+        // It is important that this is done second, so that deeper ignore rules can invert the higher level ignore rules.
+        foreach ($directory as $fileOrFolderName => $info) {
+            // Lower level rules can not undo effects on higher level directories, if a higher level rule has ignored the lower level rule's parent directory, the lower level rule is disabled, it can not re-include a file/folder as it is ignored entirely.
+            // Lower level rules can also not include a lower level file/folder if any of that file's/folder's parent directories are excluded.
+            // Lower level rules can undo what a higher level rule has done to a same level or lower level file/folder, you can make a lower level rule that reincludes same level or lower level files/folders.
+            if ($info['is_directory'] && $info['included']) {
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
+                self::processGitRulesFiles($directory[$fileOrFolderName]['contents'], $isSecondRoundForGitAttributes);
+            }
+        }
+    }
+
+    /**
+     * @param array<non-empty-string, mixed> $directory
+     * @throws PcreException
+     * @throws Exception
+     */
+    private static function processRule(array &$directory, PathMatcher $rule, string $localizedDirectoryPath = ''): void
+    {
+        // Rules can not look up, and they will always take the current directory of the .gitignore/.gitattributes file as their root.
+        // Rules that counteract the rules before it will run as the new rule for the files/folders it applies to.
+        foreach ($directory as $fileOrFolderName => $info) {
+            // To ensure the RegExp works the same on all operating systems, we use a consistent slash here.
+            $localizedFileOrFolderPath = $localizedDirectoryPath === '' ? $fileOrFolderName : $localizedDirectoryPath . PathMatcher::DIRECTORY_SEPARATOR . $fileOrFolderName;
+            if (\Safe\preg_match('/' . $rule->asRegExp() . '/u', $localizedFileOrFolderPath, $matches)) {
+                // You can have multiple matches, but not per single full path.
+                if (count($matches) > 1) {
+                    throw new Exception('Encountered more than one match for ' . $localizedFileOrFolderPath . ' through ' . $rule->asRegExp());
+                }
+                if ($rule->targetsOnlyDirectories() && !$info['is_directory']) {
+                    self::cliDebugLog('-- SKIP - NOT DIR ------ ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
+                    continue;
+                }
+                $directory[$fileOrFolderName]['included'] = $rule->toInclude();
+                self::cliDebugLog('-- MATCH --------------- ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
+            } else {
+                self::cliDebugLog('-- NO MATCH ------------ ' . $rule->asRegExp() . ' => ' . $localizedFileOrFolderPath);
+            }
+            // It is important that rule parsing happens before travelling down the directory depths.
+            // We can skip applying rules deeper down if the parent directory is ignored since lower level rules can't undo this.
+            if ($info['is_directory'] && $info['included']) {
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
+                self::processRule($directory[$fileOrFolderName]['contents'], $rule, $localizedFileOrFolderPath);
+            }
+        }
+    }
+
+    /**
+     * @param array<non-empty-string, mixed> $directory
+     */
+    private static function removeExcludedContent(array &$directory): void
+    {
+        foreach ($directory as $fileOrFolderName => $info) {
+            if ($info['included']) {
+                if ($info['is_directory']) {
+                    // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
+                    self::removeExcludedContent($directory[$fileOrFolderName]['contents']);
+                } else {
+                    continue;
+                }
+            } else {
+                unset($directory[$fileOrFolderName]);
+            }
+        }
+    }
+
+    /**
+     * @param array<non-empty-string, mixed> $directory
+     * @param int<1, max> $maxDepth
+     * @param int<1, max> $currentDepth
+     * @return array<non-empty-string|int<0, max>, mixed>
+     */
+    private static function summarize1D(array $directory, bool $showFolderOrFileType, int $maxDepth, int $currentDepth = 1): array
+    {
+        $contents = [];
+        foreach ($directory as $fileOrFolderName => $info) {
+            if ($info['is_directory']) {
+                if (count($info['contents']) > 0 && $currentDepth < $maxDepth) {
+                    $contents = array_merge($contents, self::summarize1D($info['contents'], $showFolderOrFileType, $maxDepth, $currentDepth + 1));
+                } else {
+                    if ($showFolderOrFileType) {
+                        $contents[$info['localized_path']] = 'folder';
+                    } else {
+                        $contents[] = $info['localized_path'] . DIRECTORY_SEPARATOR;
+                    }
+                }
+            } else {
+                if ($showFolderOrFileType) {
+                    $contents[$info['localized_path']] = 'file';
+                } else {
+                    $contents[] = $info['localized_path'];
+                }
+            }
+        }
+        return $contents;
+    }
+
+    /**
+     * @param array<non-empty-string, mixed> $directory
+     * @param int<1, max> $maxDepth
+     * @param int<1, max> $currentDepth
+     * @return array<non-empty-string|int<0, max>, mixed>
+     */
+    private static function summarize2D(array $directory, bool $showEmptyFoldersAsArray, int $maxDepth, int $currentDepth = 1): array
+    {
+        $contents = [];
+        /**
+         * @var non-empty-string $fileOrFolderName
+         */
+        foreach ($directory as $fileOrFolderName => $info) {
+            if ($info['is_directory']) {
+                if (count($info['contents']) > 0 && $currentDepth < $maxDepth) {
+                    $contents[$fileOrFolderName] = self::summarize2D($info['contents'], $showEmptyFoldersAsArray, $maxDepth, $currentDepth + 1);
+                } else {
+                    if ($showEmptyFoldersAsArray) {
+                        $contents[$fileOrFolderName] = [];
+                    } else {
+                        $contents[] = $fileOrFolderName . DIRECTORY_SEPARATOR;
+                    }
+                }
+            } else {
+                $contents[] = $fileOrFolderName;
+            }
+        }
+        return $contents;
+    }
+
+    /**
+     * For debugging purposes.
+     * @param array<non-empty-string, mixed> $directory
+     * @param int<1, max> $currentDepth
+     * @param int<1, max> $maxDepth
+     * @return array<int, mixed>
+     */
+    private static function flattenDirectory(array &$directory, int $maxDepth, int $currentDepth = 1): array
+    {
+        /** @var array<int<0, max>, array<non-empty-string, mixed>> $flatList */
+        $flatList = [];
+        /**
+         * @var array<non-empty-string, non-empty-string|bool|array<int<0, max>, non-empty-string>> $info
+         */
+        foreach ($directory as $fileOrFolderName => $info) {
+            $flatList[$info['localized_path']] = [
+                'localized_route' => $info['route'],
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
+                'data' => &$directory[$fileOrFolderName]
+            ];
+            if ($info['is_directory'] && $currentDepth < $maxDepth) {
+                // Do not replace $directory[$fileOrFolderName] with $info, we're trying to create a mutable reference here.
+                $flatList = array_merge($flatList, self::flattenDirectory($directory[$fileOrFolderName]['contents'], $maxDepth, $currentDepth + 1));
+            }
+        }
+        return $flatList;
+    }
+
+    private static function cliDebugLog(string $debugText): void
+    {
+        if (self::$debugMode) {
+            var_dump($debugText);
         }
     }
 }

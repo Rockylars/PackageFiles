@@ -1,16 +1,14 @@
 ### Introduction
-This little script can be used to quickly see what will be included when you turn your project into a Composer package and release a new version.
-Only in PHP, as I only work in that, but it's so small that you're free to replicate it.
+This script can be used to quickly see what will be included when you turn your project into a Composer package and release a new version.
+Also includes an option to check what you are sending to your repository.
+
+Simply call this from your test you put down in your Unit tests folder, or just the tests folder if you only got that.
 
 ### History
-This was designed when making [Faker](https://github.com/Rockylars/Faker) an open source package, as I didn't see anyone make this before.
-It's simple and quite handy, just tells you what will go in, though only cares about top level searches at the moment.
+This was originally designed when making [Faker](https://github.com/Rockylars/Faker) an open source package, as I didn't see anyone make this before.
+It's quite handy, just tells you what will go in.
 
-### Usage
-Simply call this from your a test you put down in your Unit tests folder, or just the tests folder if you only got that.
-
-### Future
-I plan to upgrade this to eventually do all the magical and recursive depth searches, but that's usually far out of scope for my projects anyways.
+The 2nd version has taken it from a simple root directory/file matcher to a recursive pattern matcher.
 
 ### Examples
 ```php
@@ -19,11 +17,24 @@ self::assertSame(
         'LICENSE',
         'README.md',
         'composer.json',
-        'src'
+        'src/'
     ],
-    PackageParser::simplePackageSearch(__DIR__ . 'path to the root')
+    PackageParser::run(onlyForRepository: true)
+);
+self::assertSame(
+    [
+        'LICENSE',
+        'README.md',
+        'composer.json',
+        'src/'
+    ],
+    PackageParser::run()
 );
 ```
+
+### Limitations
+- The `.gitignore` and `.gitattributes` files struggle with file/folder names that start with spaces, end with spaces or are just entirely spaces.
+- While this thing is also rather fast, you can speed it up by preventing deep search on things like the `vendor` folder.
 
 ### Set up the project for commits on Linux
 1. Have Docker functional, you don't need an account for this.
@@ -52,3 +63,20 @@ self::assertSame(
 
 10. Generate an access token in GitHub with just the Repo permissions.
 11. Run `make composer` and add `config --global github-oauth.github.com YOUR_GENERATED_TOKEN`.
+
+### Functions of advanced searches
+- https://git-scm.com/docs/gitignore
+- https://opensource.com/article/20/8/dont-ignore-gitignore
+- https://www.w3schools.com/git/git_ignore.asp
+- https://man7.org/linux/man-pages/man7/glob.7.html
+- The `.gitattribute` file can be put on multiple levels and will take that as it's root, they are found automatically and just the same as `.gitignore` files.
+- Patterns can not look upwards on the file tree.
+- Patterns for the `.gitattributes` `export-ignore` are the same as those for `.gitignore`.
+- Lower rule files can cancel out upper rule files, so a name match will be cancelled out by a lower not match.
+- Lower rule files can not cancel out parent directories being ignored even when re-including a lower file/directory, meaning that those lower rule files don't have to run.
+- You can ignore lower `.gitignore` and `.gitattributes` files.
+
+Testing what `.gitattributes` does is a journey, but the easiest way I've found just make a branch and commit your stuff into it, where you can confirm it behaves just like `.gitignore`.
+Any uncommitted files will not work with the following command, but you don't have to push this remote.
+You use `git archive --format=zip --output=test.zip NAME_OF_TEST_FILE_BRANCH_BASED_ON_CHANGE_BRANCH` to generate it.
+You can use `git ls-tree NAME_OF_BRANCH -r --name-only` to see what could be getting committed and `{ git ls-tree -r main --name-only; find SOME_FOLDER_PATH MORE_FOLDER_PATHS -type f; }` to investigate it deeper

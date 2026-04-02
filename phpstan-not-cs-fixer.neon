@@ -1,9 +1,12 @@
 parameters:
     level: 8
-    tmpDir: output/cache/phpstan
+    tmpDir: output/cache/phpstan/not-cs-fixer
     paths:
         - src
         - tests
+        # .php-cs-fixer.php
+
+    reportUnmatchedIgnoredErrors: false
 
     # https://github.com/spaze/phpstan-disallowed-calls
 

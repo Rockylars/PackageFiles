@@ -1,2 +1,36 @@
 parameters:
-	ignoreErrors: []
+	ignoreErrors:
+		-
+			message: "#^Calling var_dump\\(\\) is forbidden, you probably left a debug statement active in the code\\.$#"
+			count: 1
+			path: src/PackageParser.php
+
+		-
+			message: "#^Method Rocky\\\\PackageFiles\\\\PackageParser\\:\\:run\\(\\) should return array\\<int, mixed\\> but returns array\\<int\\<0, max\\>\\|string, mixed\\>\\.$#"
+			count: 1
+			path: src/PackageParser.php
+
+		-
+			message: "#^Method Rocky\\\\PackageFiles\\\\PackageParser\\:\\:summarize1D\\(\\) should return array\\<int\\<0, max\\>\\|non\\-empty\\-string, mixed\\> but returns array\\<int\\|string, mixed\\>\\.$#"
+			count: 1
+			path: src/PackageParser.php
+
+		-
+			message: "#^Possibly invalid array key type array\\<int\\<0, max\\>, string\\>\\|bool\\|string\\.$#"
+			count: 1
+			path: src/PackageParser.php
+
+		-
+			message: "#^Static method Rocky\\\\PackageFiles\\\\PackageParser\\:\\:flattenDirectory\\(\\) is unused\\.$#"
+			count: 1
+			path: src/PackageParser.php
+
+		-
+			message: "#^Method Rocky\\\\PackageFiles\\\\PathMatcherComponent\\\\CharacterFromList\\:\\:asRegExp\\(\\) should return non\\-empty\\-string but returns ''\\.$#"
+			count: 1
+			path: src/PathMatcherComponent/CharacterFromList.php
+
+		-
+			message: "#^Method Rocky\\\\PackageFiles\\\\PathMatcherComponent\\\\CharacterListComponent\\\\CharacterRange\\:\\:asRegExp\\(\\) should return non\\-empty\\-string but returns ''\\.$#"
+			count: 1
+			path: src/PathMatcherComponent/CharacterListComponent/CharacterRange.php

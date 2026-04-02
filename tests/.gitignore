@@ -1,0 +1,4 @@
+# Add / in front to make it path match and not name match
+
+# Just to ensure we don't commit the test file by accident.
+/fake_project/
